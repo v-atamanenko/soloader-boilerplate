@@ -1,0 +1,10 @@
+[submodule "stb"]
+	path = lib/stb
+	url = https://github.com/nothings/stb
+[submodule "lib/FalsoJNI"]
+	path = lib/FalsoJNI
+	url = https://github.com/v-atamanenko/FalsoJNI
+[submodule "lib/falso_jni"]
+	path = lib/falso_jni
+	url = git@github.com:v-atamanenko/FalsoJNI.git
+	branch = master
