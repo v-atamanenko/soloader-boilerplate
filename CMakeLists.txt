@@ -54,6 +54,7 @@ add_executable(${CMAKE_PROJECT_NAME}
                source/reimpl/env.c
                source/reimpl/errno.c
                source/reimpl/io.c
+               source/reimpl/ioctl.c
                source/reimpl/log.c
                source/reimpl/mem.c
                source/reimpl/pthr.c
