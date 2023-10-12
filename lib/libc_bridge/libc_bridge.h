@@ -58,6 +58,7 @@ int sceLibcBridge_putchar(int c);
 int sceLibcBridge_puts(const char *s);
 wint_t sceLibcBridge_putwc(wchar_t c, FILE * stream);
 int sceLibcBridge_setvbuf(FILE * stream, char * buf, int mode, size_t size);
+wint_t sceLibcBridge_getwc(FILE *stream);
 wint_t sceLibcBridge_ungetwc(wint_t c, FILE *stream);
 int sceLibcBridge_vfprintf(FILE * stream, const char * format, va_list args);
 
