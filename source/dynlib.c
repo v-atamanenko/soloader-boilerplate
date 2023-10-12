@@ -148,6 +148,15 @@ int sigaction(int signal, const struct sigaction* bionic_new_action, struct siga
     return 0;
 }
 
+void *dlsym_fake(void *restrict handle, const char *restrict symbol) {
+    // Usage example:
+    // if (strcmp("AMotionEvent_getAxisValue", symbol) == 0)
+    //    return &AMotionEvent_getAxisValue;
+    
+    logv_error("Symbol %s not found", symbol);
+    return NULL;
+}
+
 so_default_dynlib default_dynlib[] = {
         // Common C/C++ internals
         { "__aeabi_atexit", (uintptr_t)&__aeabi_atexit },
@@ -199,6 +208,8 @@ so_default_dynlib default_dynlib[] = {
         { "__cxa_throw", (uintptr_t)&__cxa_throw },
         { "__gnu_ldivmod_helper", (uintptr_t)&__gnu_ldivmod_helper },
         { "__gnu_unwind_frame", (uintptr_t)&__gnu_unwind_frame },
+        { "__google_potentially_blocking_region_begin", (uintptr_t)&ret0 },
+        { "__google_potentially_blocking_region_end", (uintptr_t)&ret0 },
         { "__gxx_personality_v0", (uintptr_t)&__gxx_personality_v0 },
         { "__sF", (uintptr_t)&__sF_fake },
         { "__srget", (uintptr_t)&__srget },
@@ -282,6 +293,7 @@ so_default_dynlib default_dynlib[] = {
         { "pow", (uintptr_t)&pow },
         { "powf", (uintptr_t)&powf },
         { "rint", (uintptr_t)&rint },
+        { "rintf", (uintptr_t)&rintf },
         { "round", (uintptr_t)&round },
         { "roundf", (uintptr_t)&roundf },
         { "scalbn", (uintptr_t)&scalbn },
@@ -301,6 +313,7 @@ so_default_dynlib default_dynlib[] = {
 
 
         // EGL
+        { "eglBindAPI", (uintptr_t)&eglBindAPI },
         { "eglChooseConfig", (uintptr_t)&eglChooseConfig },
         { "eglCreateContext", (uintptr_t)&eglCreateContext },
         { "eglCreateWindowSurface", (uintptr_t)&eglCreateWindowSurface },
@@ -392,6 +405,7 @@ so_default_dynlib default_dynlib[] = {
             { "ftell", (uintptr_t)&sceLibcBridge_ftell },
             { "fwrite", (uintptr_t)&sceLibcBridge_fwrite },
             { "getc", (uintptr_t)&sceLibcBridge_getc },
+            { "getwc", (uintptr_t)&sceLibcBridge_getwc },
             { "putc", (uintptr_t)&sceLibcBridge_putc },
             { "putchar", (uintptr_t)&sceLibcBridge_putchar },
             { "puts", (uintptr_t)&sceLibcBridge_puts },
@@ -416,6 +430,7 @@ so_default_dynlib default_dynlib[] = {
             { "ftell", (uintptr_t)&ftell },
             { "fwrite", (uintptr_t)&fwrite },
             { "getc", (uintptr_t)&getc },
+            { "getwc", (uintptr_t)&getwc },
             { "putc", (uintptr_t)&putc },
             { "putchar", (uintptr_t)&putchar },
             { "puts", (uintptr_t)&puts },
@@ -528,11 +543,13 @@ so_default_dynlib default_dynlib[] = {
         { "glFlush", (uintptr_t)&glFlush },
         { "glFramebufferRenderbuffer", (uintptr_t)&glFramebufferRenderbuffer },
         { "glFramebufferTexture2D", (uintptr_t)&glFramebufferTexture2D },
+        { "glFrontFace", (uintptr_t)&glFrontFace },
         { "glGenBuffers", (uintptr_t)&glGenBuffers },
         { "glGenerateMipmap", (uintptr_t)&glGenerateMipmap },
         { "glGenFramebuffers", (uintptr_t)&glGenFramebuffers },
         { "glGenRenderbuffers", (uintptr_t)&glGenRenderbuffers },
         { "glGenTextures", (uintptr_t)&glGenTextures },
+        { "glGetActiveUniform", (uintptr_t)&glGetActiveUniform },
         { "glGetAttribLocation", (uintptr_t)&glGetAttribLocation },
         { "glGetError", (uintptr_t)&glGetError },
         { "glGetFloatv", (uintptr_t)&glGetFloatv },
@@ -556,6 +573,7 @@ so_default_dynlib default_dynlib[] = {
         { "glMatrixMode", (uintptr_t)&glMatrixMode },
         { "glNormalPointer", (uintptr_t)&glNormalPointer },
         { "glPixelStorei", (uintptr_t)&ret0 },
+        { "glPolygonOffset", (uintptr_t)&glPolygonOffset },
         { "glPopMatrix", (uintptr_t)&glPopMatrix },
         { "glPushMatrix", (uintptr_t)&glPushMatrix },
         { "glReadPixels", (uintptr_t)&glReadPixels },
@@ -581,10 +599,14 @@ so_default_dynlib default_dynlib[] = {
         { "glUniform1iv", (uintptr_t)&glUniform1iv },
         { "glUniform2f", (uintptr_t)&glUniform2f },
         { "glUniform2fv", (uintptr_t)&glUniform2fv },
+        { "glUniform2iv", (uintptr_t)&glUniform2iv },
         { "glUniform3f", (uintptr_t)&glUniform3f },
         { "glUniform3fv", (uintptr_t)&glUniform3fv },
+        { "glUniform3iv", (uintptr_t)&glUniform3iv },
         { "glUniform4f", (uintptr_t)&glUniform4f },
         { "glUniform4fv", (uintptr_t)&glUniform4fv },
+        { "glUniform4iv", (uintptr_t)&glUniform4iv },
+        { "glUniformMatrix2fv", (uintptr_t)&glUniformMatrix2fv },
         { "glUniformMatrix3fv", (uintptr_t)&glUniformMatrix3fv },
         { "glUniformMatrix4fv", (uintptr_t)&glUniformMatrix4fv },
         { "glUseProgram", (uintptr_t)&glUseProgram },
@@ -608,6 +630,7 @@ so_default_dynlib default_dynlib[] = {
         { "pthread_create", (uintptr_t) &pthread_create_soloader },
         { "pthread_detach", (uintptr_t) &pthread_detach_soloader },
         { "pthread_equal", (uintptr_t) &pthread_equal_soloader },
+        { "pthread_exit", (uintptr_t)&pthread_exit },
         { "pthread_getschedparam", (uintptr_t) &pthread_getschedparam_soloader },
         { "pthread_getspecific", (uintptr_t)&pthread_getspecific },
         { "pthread_join", (uintptr_t) &pthread_join_soloader },
@@ -682,8 +705,8 @@ so_default_dynlib default_dynlib[] = {
         // libdl
         { "dlclose", (uintptr_t)&ret0 },
         { "dlerror", (uintptr_t)&ret0 },
-        { "dlopen", (uintptr_t)&ret0 },
-        { "dlsym", (uintptr_t)&ret0 },
+        { "dlopen", (uintptr_t)&ret1 },
+        { "dlsym", (uintptr_t)&dlsym_fake },
 
 
         // Errno
@@ -727,7 +750,9 @@ so_default_dynlib default_dynlib[] = {
 
 
         // Time
+        { "clock", (uintptr_t)&clock },
         { "clock_gettime", (uintptr_t)&clock_gettime },
+        { "difftime", (uintptr_t)&difftime },
         { "gettimeofday", (uintptr_t)&gettimeofday },
         { "gmtime", (uintptr_t)&gmtime },
         { "gmtime_r", (uintptr_t)&gmtime_r },

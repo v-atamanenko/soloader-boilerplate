@@ -30,6 +30,7 @@ modules:
           sceLibcBridge_ftell: 0x41C2AF95
           sceLibcBridge_fwrite: 0x8BCDCC4E
           sceLibcBridge_getc: 0x4BD5212E
+          sceLibcBridge_getwc: 0x23E0F442
           sceLibcBridge_longjmp: 0x2D81C8C8
           sceLibcBridge_malloc: 0x775A0CB2
           sceLibcBridge_memalign: 0xA9363E6B
