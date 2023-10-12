@@ -321,6 +321,7 @@ int so_file_load(so_module *mod, const char *filename, uintptr_t load_addr) {
 }
 
 int so_relocate(so_module *mod) {
+    uintptr_t val;
     for (int i = 0; i < mod->num_reldyn + mod->num_relplt; i++) {
         Elf32_Rel *rel = i < mod->num_reldyn ? &mod->reldyn[i] : &mod->relplt[i - mod->num_reldyn];
         Elf32_Sym *sym = &mod->dynsym[ELF32_R_SYM(rel->r_info)];
@@ -329,17 +330,22 @@ int so_relocate(so_module *mod) {
         int type = ELF32_R_TYPE(rel->r_info);
         switch (type) {
             case R_ARM_ABS32:
-                if (sym->st_shndx != SHN_UNDEF)
-                    *ptr += mod->text_base + sym->st_value;
+                if (sym->st_shndx != SHN_UNDEF) {
+                    val = *ptr + mod->text_base + sym->st_value;
+                    kuKernelCpuUnrestrictedMemcpy(ptr, &val, sizeof(uintptr_t));
+                }
                 break;
             case R_ARM_RELATIVE:
-                *ptr += mod->text_base;
+                val = *ptr + mod->text_base;
+                kuKernelCpuUnrestrictedMemcpy(ptr, &val, sizeof(uintptr_t));
                 break;
             case R_ARM_GLOB_DAT:
             case R_ARM_JUMP_SLOT:
             {
-                if (sym->st_shndx != SHN_UNDEF)
-                    *ptr = mod->text_base + sym->st_value;
+                if (sym->st_shndx != SHN_UNDEF) {
+                    val = mod->text_base + sym->st_value;
+                    kuKernelCpuUnrestrictedMemcpy(ptr, &val, sizeof(uintptr_t));
+                }
                 break;
             }
             default:
@@ -512,7 +518,7 @@ int so_resolve_with_dummy(so_module *mod, so_default_dynlib *default_dynlib, int
 
 void so_initialize(so_module *mod) {
     for (int i = 0; i < mod->num_init_array; i++) {
-        if (mod->init_array[i])
+        if (mod->init_array[i] && (int)mod->init_array[i] != -1)
             mod->init_array[i]();
     }
 }

@@ -34,6 +34,12 @@
 #include "_struct_converters.c"
 
 FILE *fopen_soloader(char *fname, char *mode) {
+    if (strcmp(fname, "/proc/cpuinfo") == 0) {
+        return fopen_soloader("app0:/cpuinfo", mode);
+    } else if (strcmp(fname, "/proc/meminfo") == 0) {
+        return fopen_soloader("app0:/meminfo", mode);
+    }
+
     #ifdef USE_SCELIBC_IO
         FILE* ret = sceLibcBridge_fopen(fname, mode);
     #else
@@ -46,6 +52,12 @@ FILE *fopen_soloader(char *fname, char *mode) {
 }
 
 int open_soloader(char *_fname, int flags) {
+    if (strcmp(_fname, "/proc/cpuinfo") == 0) {
+        return open_soloader("app0:/cpuinfo", flags);
+    } else if (strcmp(_fname, "/proc/meminfo") == 0) {
+        return open_soloader("app0:/meminfo", flags);
+    }
+
     flags = oflags_newlib_to_oflags_musl(flags);
     int ret = open(_fname, flags);
     logv_debug("[io] open(%s, %x): %i", _fname, flags, ret);

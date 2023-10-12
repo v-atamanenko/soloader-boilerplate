@@ -384,7 +384,7 @@ so_default_dynlib default_dynlib[] = {
         { "fstat", (uintptr_t)&fstat_soloader },
         { "ioctl", (uintptr_t)&ioctl_soloader },
         { "open", (uintptr_t)&open_soloader },
-        { "opendir", (uintptr_t)&open_soloader },
+        { "opendir", (uintptr_t)&opendir_soloader },
         { "readdir", (uintptr_t)&readdir_soloader },
         { "stat", (uintptr_t)&stat_soloader },
 
@@ -751,6 +751,7 @@ so_default_dynlib default_dynlib[] = {
 
         // Time
         { "clock", (uintptr_t)&clock },
+        { "clock_getres", (uintptr_t)&clock_getres },
         { "clock_gettime", (uintptr_t)&clock_gettime },
         { "difftime", (uintptr_t)&difftime },
         { "gettimeofday", (uintptr_t)&gettimeofday },
@@ -762,7 +763,7 @@ so_default_dynlib default_dynlib[] = {
         { "nanosleep", (uintptr_t)&nanosleep },
         { "strftime", (uintptr_t)&strftime },
         { "time", (uintptr_t)&time },
-
+        { "tzset", (uintptr_t)&tzset },
 
 
         // Temp
