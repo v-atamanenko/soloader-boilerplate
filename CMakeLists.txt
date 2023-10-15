@@ -73,7 +73,7 @@ add_executable(${CMAKE_PROJECT_NAME}
                lib/so_util/so_util.c)
 
 add_subdirectory(lib/libc_bridge)
-add_dependencies(so_loader SceLibcBridge)
+add_dependencies(${CMAKE_PROJECT_NAME} SceLibcBridge)
 
 target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM
                            PUBLIC ${CMAKE_SOURCE_DIR}/lib
