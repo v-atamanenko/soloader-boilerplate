@@ -15,28 +15,87 @@
 
 #include "utils/logger.h"
 
-int android_log_write(int prio, const char *tag, const char *msg) {
-    logv_debug("[ALOG][%i] %s: %s", prio, tag, msg);
+int __android_log_write(int prio, const char* tag, const char* text) {
+    switch (prio) {
+        case ANDROID_LOG_INFO:
+            logv_info("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_WARN:
+            logv_warn("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_ERROR:
+        case ANDROID_LOG_FATAL:
+            logv_error("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_UNKNOWN:
+        case ANDROID_LOG_DEFAULT:
+        case ANDROID_LOG_VERBOSE:
+        case ANDROID_LOG_DEBUG:
+        case ANDROID_LOG_SILENT:
+        default:
+            logv_debug("[ALOG][%s] %s", tag, text);
+            break;
+    }
     return 0;
 }
 
-int android_log_print(int prio, const char *tag, const char *fmt, ...) {
+int __android_log_print(int prio, const char* tag, const char* fmt, ...) {
     va_list list;
-    char msg[1024];
+    char text[1024];
 
     va_start(list, fmt);
-    sceClibVsnprintf(msg, sizeof(msg), fmt, list);
+    sceClibVsnprintf(text, sizeof(text), fmt, list);
     va_end(list);
 
-    logv_debug("[ALOG][%i] %s: %s", prio, tag, msg);
+    switch (prio) {
+        case ANDROID_LOG_INFO:
+            logv_info("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_WARN:
+            logv_warn("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_ERROR:
+        case ANDROID_LOG_FATAL:
+            logv_error("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_UNKNOWN:
+        case ANDROID_LOG_DEFAULT:
+        case ANDROID_LOG_VERBOSE:
+        case ANDROID_LOG_DEBUG:
+        case ANDROID_LOG_SILENT:
+        default:
+            logv_debug("[ALOG][%s] %s", tag, text);
+            break;
+    }
+
     return 0;
 }
 
-int android_log_vprint(int prio, const char *tag, const char *fmt, va_list lst) {
-    char msg[1024];
+int __android_log_vprint(int prio, const char* tag, const char* fmt, va_list ap) {
+    char text[1024];
 
-    sceClibVsnprintf(msg, sizeof(msg), fmt, lst);
+    sceClibVsnprintf(text, sizeof(text), fmt, ap);
 
-    logv_debug("[LOGV][%i] %s: %s", prio, tag, msg);
+    switch (prio) {
+        case ANDROID_LOG_INFO:
+            logv_info("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_WARN:
+            logv_warn("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_ERROR:
+        case ANDROID_LOG_FATAL:
+            logv_error("[ALOG][%s] %s", tag, text);
+            break;
+        case ANDROID_LOG_UNKNOWN:
+        case ANDROID_LOG_DEFAULT:
+        case ANDROID_LOG_VERBOSE:
+        case ANDROID_LOG_DEBUG:
+        case ANDROID_LOG_SILENT:
+        default:
+            logv_debug("[ALOG][%s] %s", tag, text);
+            break;
+    }
+
     return 0;
 }
