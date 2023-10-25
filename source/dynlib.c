@@ -252,9 +252,9 @@ so_default_dynlib default_dynlib[] = {
 
 
         // Android SDK standard logging
-        { "__android_log_print", (uintptr_t)&android_log_print },
-        { "__android_log_vprint", (uintptr_t)&android_log_vprint },
-        { "__android_log_write", (uintptr_t)&android_log_write },
+        { "__android_log_print", (uintptr_t)&__android_log_print },
+        { "__android_log_vprint", (uintptr_t)&__android_log_vprint },
+        { "__android_log_write", (uintptr_t)&__android_log_write },
 
 
         // Math
