@@ -312,24 +312,6 @@ so_default_dynlib default_dynlib[] = {
         { "truncf", (uintptr_t)&truncf },
 
 
-        // EGL
-        { "eglBindAPI", (uintptr_t)&eglBindAPI },
-        { "eglChooseConfig", (uintptr_t)&eglChooseConfig },
-        { "eglCreateContext", (uintptr_t)&eglCreateContext },
-        { "eglCreateWindowSurface", (uintptr_t)&eglCreateWindowSurface },
-        { "eglDestroyContext", (uintptr_t)&eglDestroyContext },
-        { "eglDestroySurface", (uintptr_t)&eglDestroySurface },
-        { "eglGetConfigAttrib", (uintptr_t)&eglGetConfigAttrib },
-        { "eglGetDisplay", (uintptr_t)&eglGetDisplay },
-        { "eglGetError", (uintptr_t)&eglGetError },
-        { "eglGetProcAddress", (uintptr_t)&eglGetProcAddress },
-        { "eglInitialize", (uintptr_t)&eglInitialize },
-        { "eglMakeCurrent", (uintptr_t)&eglMakeCurrent },
-        { "eglQuerySurface", (uintptr_t)&eglQuerySurface },
-        { "eglSwapBuffers", (uintptr_t)&eglSwapBuffers },
-        { "eglTerminate", (uintptr_t)&eglTerminate },
-        
-
         // Sockets
         { "accept", (uintptr_t)&accept },
         { "bind", (uintptr_t)&bind },
@@ -378,6 +360,7 @@ so_default_dynlib default_dynlib[] = {
 
         // IO
         { "close", (uintptr_t)&close_soloader },
+        { "closedir", (uintptr_t)&closedir_soloader },
         { "fclose", (uintptr_t)&fclose_soloader },
         { "fcntl", (uintptr_t)&fcntl_soloader },
         { "fopen", (uintptr_t)&fopen_soloader },
@@ -386,6 +369,7 @@ so_default_dynlib default_dynlib[] = {
         { "open", (uintptr_t)&open_soloader },
         { "opendir", (uintptr_t)&opendir_soloader },
         { "readdir", (uintptr_t)&readdir_soloader },
+        { "readdir_r", (uintptr_t)&readdir_r_soloader },
         { "stat", (uintptr_t)&stat_soloader },
 
         #ifdef USE_SCELIBC_IO
@@ -443,7 +427,6 @@ so_default_dynlib default_dynlib[] = {
         { "access", (uintptr_t)&access },
         { "chdir", (uintptr_t)&chdir },
         { "chmod", (uintptr_t)&chmod },
-        { "closedir", (uintptr_t)&closedir },
         { "dup", (uintptr_t)&dup },
         { "fileno", (uintptr_t)&fileno },
         { "fseeko", (uintptr_t)&fseeko }, // TODO: wrap normal fseek for SceLibc version?
@@ -487,6 +470,24 @@ so_default_dynlib default_dynlib[] = {
             { "sscanf", (uintptr_t)&sscanf },
             { "vfprintf", (uintptr_t)&vfprintf },
         #endif
+
+
+        // EGL
+        { "eglBindAPI", (uintptr_t)&eglBindAPI },
+        { "eglChooseConfig", (uintptr_t)&eglChooseConfig },
+        { "eglCreateContext", (uintptr_t)&eglCreateContext },
+        { "eglCreateWindowSurface", (uintptr_t)&eglCreateWindowSurface },
+        { "eglDestroyContext", (uintptr_t)&eglDestroyContext },
+        { "eglDestroySurface", (uintptr_t)&eglDestroySurface },
+        { "eglGetConfigAttrib", (uintptr_t)&eglGetConfigAttrib },
+        { "eglGetDisplay", (uintptr_t)&eglGetDisplay },
+        { "eglGetError", (uintptr_t)&eglGetError },
+        { "eglGetProcAddress", (uintptr_t)&eglGetProcAddress },
+        { "eglInitialize", (uintptr_t)&eglInitialize },
+        { "eglMakeCurrent", (uintptr_t)&eglMakeCurrent },
+        { "eglQuerySurface", (uintptr_t)&eglQuerySurface },
+        { "eglSwapBuffers", (uintptr_t)&eglSwapBuffers },
+        { "eglTerminate", (uintptr_t)&eglTerminate },
 
 
         // OpenGL
@@ -549,6 +550,7 @@ so_default_dynlib default_dynlib[] = {
         { "glGenFramebuffers", (uintptr_t)&glGenFramebuffers },
         { "glGenRenderbuffers", (uintptr_t)&glGenRenderbuffers },
         { "glGenTextures", (uintptr_t)&glGenTextures },
+        { "glGetActiveAttrib", (uintptr_t)&glGetActiveAttrib },
         { "glGetActiveUniform", (uintptr_t)&glGetActiveUniform },
         { "glGetAttribLocation", (uintptr_t)&glGetAttribLocation },
         { "glGetError", (uintptr_t)&glGetError },
@@ -824,6 +826,22 @@ so_default_dynlib default_dynlib[] = {
         
         // Locale
         { "setlocale", (uintptr_t)&setlocale },
+
+
+        // zlib
+        { "gzopen", (uintptr_t)&gzopen },
+        { "gzgets", (uintptr_t)&gzgets },
+        { "gzclose", (uintptr_t)&gzclose },
+        { "compressBound", (uintptr_t)&compressBound },
+        { "compress", (uintptr_t)&compress },
+        { "uncompress", (uintptr_t)&uncompress },
+        { "deflateInit_", (uintptr_t)&deflateInit_ },
+        { "deflate", (uintptr_t)&deflate },
+        { "deflateEnd", (uintptr_t)&deflateEnd },
+        { "inflateInit_", (uintptr_t)&inflateInit_ },
+        { "inflate", (uintptr_t)&inflate },
+        { "inflateEnd", (uintptr_t)&inflateEnd },
+        { "inflateInit2_", (uintptr_t)&inflateInit2_ },
 };
 
 void resolve_imports(so_module* mod) {
