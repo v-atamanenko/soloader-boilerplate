@@ -340,7 +340,19 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display,
     return EGL_TRUE;
 }
 
-EGLBoolean eglChooseConfig (EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config) {
+EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config) {
+    if (!num_config) {
+        return EGL_BAD_PARAMETER;
+    }
+
+    if (!configs) {
+        *num_config = 1;
+        return EGL_TRUE;
+    }
+
+    *configs = strdup("1");
+    *num_config = 1;
+
     return EGL_TRUE;
 }
 
