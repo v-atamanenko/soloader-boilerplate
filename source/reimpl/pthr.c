@@ -62,7 +62,7 @@ static volatile short int pthr_mutex_inited = 0;
         sceKernelUnlockLwMutex(&pthr_mutex, 1); \
     }
 
-int isObjectInitialized(void * mut) {
+int isObjectInitialized(const void * mut) {
     PTHR_LOCK
     for (int i = 0; i < 512; ++i) {
         if (initializedObjects[i] == mut) {
@@ -87,7 +87,7 @@ int rememberObject(void * mut) {
     return 0;
 }
 
-int forgetObject(void * mut) {
+int forgetObject(const void * mut) {
     PTHR_LOCK
     for (int i = 0; i < 512; ++i) {
         if (initializedObjects[i] == mut) {
@@ -148,7 +148,7 @@ PTHR_INLINE int _mutex_t_static_init(pthread_mutex_t_bionic * mutex, const pthre
 
 // null check for `cond` param must be performed before this, `attr` is fine as null
 PTHR_INLINE int _cond_t_static_init(pthread_cond_t_bionic * cond, const pthread_condattr_t * attr) {
-    int ret = 0, doInit = 0;
+    int ret = 0;
 
     if (isObjectInitialized(cond)) {
         //logv_debug("cond already initialized: %p", cond);
