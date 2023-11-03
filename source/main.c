@@ -1,7 +1,7 @@
 /*
  * main.c
  *
- * ARMv7 Shared Libraries loader. Backstab HD edition
+ * ARMv7 Shared Libraries loader
  *
  * Copyright (C) 2021 Andy Nguyen
  * Copyright (C) 2021-2023 Rinnegatamante
