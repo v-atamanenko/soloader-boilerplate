@@ -82,46 +82,45 @@ extern void *_ZTVN10__cxxabiv120__si_class_type_infoE;
 extern void *_ZTVN10__cxxabiv121__vmi_class_type_infoE;
 extern void *_Znwj;
 extern void *__aeabi_atexit;
-extern void *__cxa_atexit;
-extern void *__cxa_finalize;
-extern void *__cxa_pure_virtual;
-extern void *__cxa_guard_acquire;
-extern void *__cxa_guard_release;
-extern void *__gnu_unwind_frame;
-extern void *__stack_chk_fail;
-extern void *__stack_chk_guard;
-
 extern void *__aeabi_d2lz;
+extern void *__aeabi_d2ulz;
 extern void *__aeabi_dadd;
 extern void *__aeabi_dcmpgt;
 extern void *__aeabi_dcmplt;
 extern void *__aeabi_ddiv;
 extern void *__aeabi_dmul;
 extern void *__aeabi_f2lz;
+extern void *__aeabi_f2ulz;
 extern void *__aeabi_i2d;
 extern void *__aeabi_idiv;
 extern void *__aeabi_idivmod;
 extern void *__aeabi_l2d;
 extern void *__aeabi_l2f;
 extern void *__aeabi_ldivmod;
+extern void *__aeabi_memclr;
+extern void *__aeabi_memcpy;
+extern void *__aeabi_memmove;
+extern void *__aeabi_memset4;
+extern void *__aeabi_memset8;
+extern void *__aeabi_memset;
+extern void *__aeabi_ui2d;
 extern void *__aeabi_uidiv;
 extern void *__aeabi_uidivmod;
-extern void *__aeabi_ui2d;
 extern void *__aeabi_ul2d;
 extern void *__aeabi_ul2f;
 extern void *__aeabi_uldivmod;
 extern void *__aeabi_unwind_cpp_pr0;
 extern void *__aeabi_unwind_cpp_pr1;
+extern void *__cxa_atexit;
+extern void *__cxa_finalize;
+extern void *__cxa_guard_acquire;
+extern void *__cxa_guard_release;
+extern void *__cxa_pure_virtual;
 extern void *__gnu_ldivmod_helper;
-
-extern void *__aeabi_memclr;
-extern void *__aeabi_memcpy;
-extern void *__aeabi_memmove;
-extern void *__aeabi_memset;
-extern void *__aeabi_memset4;
-extern void *__aeabi_memset8;
-
+extern void *__gnu_unwind_frame;
 extern void *__srget;
+extern void *__stack_chk_fail;
+extern void *__stack_chk_guard;
 extern void *__swbuf;
 
 extern const char *BIONIC_ctype_;
@@ -159,14 +158,29 @@ void *dlsym_fake(void *restrict handle, const char *restrict symbol) {
 
 so_default_dynlib default_dynlib[] = {
         // Common C/C++ internals
+        { "_ZNSt8bad_castD1Ev", (uintptr_t)&_ZNSt8bad_castD1Ev },
+        { "_ZNSt9exceptionD2Ev", (uintptr_t)&_ZNSt9exceptionD2Ev },
+        { "_ZSt17__throw_bad_allocv", (uintptr_t)&_ZSt17__throw_bad_allocv },
+        { "_ZSt9terminatev", (uintptr_t)&_ZSt9terminatev },
+        { "_ZTISt8bad_cast", (uintptr_t)&_ZTISt8bad_cast },
+        { "_ZTISt9exception", (uintptr_t)&_ZTISt9exception },
+        { "_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE },
+        { "_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE },
+        { "_ZTVN10__cxxabiv121__vmi_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv121__vmi_class_type_infoE },
+        { "_ZdaPv", (uintptr_t)&_ZdaPv },
+        { "_ZdlPv", (uintptr_t)&_ZdlPv },
+        { "_Znaj", (uintptr_t)&_Znaj },
+        { "_Znwj", (uintptr_t)&_Znwj },
         { "__aeabi_atexit", (uintptr_t)&__aeabi_atexit },
         { "__aeabi_d2lz", (uintptr_t)&__aeabi_d2lz },
+        { "__aeabi_d2ulz", (uintptr_t)&__aeabi_d2ulz },
         { "__aeabi_dadd", (uintptr_t)&__aeabi_dadd },
         { "__aeabi_dcmpgt", (uintptr_t)&__aeabi_dcmpgt },
         { "__aeabi_dcmplt", (uintptr_t)&__aeabi_dcmplt },
         { "__aeabi_ddiv", (uintptr_t)&__aeabi_ddiv },
         { "__aeabi_dmul", (uintptr_t)&__aeabi_dmul },
         { "__aeabi_f2lz", (uintptr_t)&__aeabi_f2lz },
+        { "__aeabi_f2ulz", (uintptr_t)&__aeabi_f2ulz },
         { "__aeabi_i2d", (uintptr_t)&__aeabi_i2d },
         { "__aeabi_idiv", (uintptr_t)&__aeabi_idiv },
         { "__aeabi_idivmod", (uintptr_t)&__aeabi_idivmod },
@@ -217,19 +231,6 @@ so_default_dynlib default_dynlib[] = {
         { "__stack_chk_guard", (uintptr_t)&__stack_chk_guard },
         { "__swbuf", (uintptr_t)&__swbuf },
         { "__system_property_get", (uintptr_t)&__system_property_get },
-        { "_ZdaPv", (uintptr_t)&_ZdaPv },
-        { "_ZdlPv", (uintptr_t)&_ZdlPv },
-        { "_Znaj", (uintptr_t)&_Znaj },
-        { "_ZNSt8bad_castD1Ev", (uintptr_t)&_ZNSt8bad_castD1Ev },
-        { "_ZNSt9exceptionD2Ev", (uintptr_t)&_ZNSt9exceptionD2Ev },
-        { "_Znwj", (uintptr_t)&_Znwj },
-        { "_ZSt17__throw_bad_allocv", (uintptr_t)&_ZSt17__throw_bad_allocv },
-        { "_ZSt9terminatev", (uintptr_t)&_ZSt9terminatev },
-        { "_ZTISt8bad_cast", (uintptr_t)&_ZTISt8bad_cast },
-        { "_ZTISt9exception", (uintptr_t)&_ZTISt9exception },
-        { "_ZTVN10__cxxabiv117__class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv117__class_type_infoE },
-        { "_ZTVN10__cxxabiv120__si_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv120__si_class_type_infoE },
-        { "_ZTVN10__cxxabiv121__vmi_class_type_infoE", (uintptr_t)&_ZTVN10__cxxabiv121__vmi_class_type_infoE },
 
 
         // ctype
@@ -458,6 +459,7 @@ so_default_dynlib default_dynlib[] = {
         { "vsscanf", (uintptr_t)&vsscanf },
         { "vswprintf", (uintptr_t)&vswprintf },
         { "printf", (uintptr_t)&sceClibPrintf },
+        { "swprintf", (uintptr_t)&swprintf },
 
         #ifdef USE_SCELIBC_IO
             { "fprintf", (uintptr_t)&sceLibcBridge_fprintf },
@@ -492,14 +494,18 @@ so_default_dynlib default_dynlib[] = {
 
         // OpenGL
         { "glActiveTexture", (uintptr_t)&glActiveTexture },
+        { "glAlphaFunc", (uintptr_t) &glAlphaFunc },
         { "glAlphaFuncx", (uintptr_t)&glAlphaFuncx },
         { "glAttachShader", (uintptr_t)&glAttachShader },
         { "glBindAttribLocation", (uintptr_t)&glBindAttribLocation },
         { "glBindBuffer", (uintptr_t)&glBindBuffer },
         { "glBindFramebuffer", (uintptr_t)&glBindFramebuffer },
+        { "glBindFramebufferOES", (uintptr_t)&glBindFramebuffer },
         { "glBindRenderbuffer", (uintptr_t)&glBindRenderbuffer },
+        { "glBindFramebufferOES", (uintptr_t)&glBindFramebuffer },
         { "glBindTexture", (uintptr_t)&glBindTexture },
         { "glBlendEquation", (uintptr_t)&glBlendEquation },
+        { "glBlendEquationOES", (uintptr_t)&glBlendEquation },
         { "glBlendEquationSeparate", (uintptr_t)&glBlendEquationSeparate },
         { "glBlendFunc", (uintptr_t)&glBlendFunc },
         { "glBlendFuncSeparate", (uintptr_t)&glBlendFuncSeparate },
@@ -512,6 +518,8 @@ so_default_dynlib default_dynlib[] = {
         { "glClearDepthf", (uintptr_t)&glClearDepthf },
         { "glClearDepthx", (uintptr_t)&glClearDepthx },
         { "glClearStencil", (uintptr_t)&glClearStencil },
+        { "glClientActiveTexture", (uintptr_t)&glClientActiveTexture },
+        { "glColor4f", (uintptr_t)&glColor4f },
         { "glColor4x", (uintptr_t)&glColor4x },
         { "glColorMask", (uintptr_t)&glColorMask },
         { "glColorPointer", (uintptr_t)&glColorPointer },
@@ -525,8 +533,10 @@ so_default_dynlib default_dynlib[] = {
         { "glCullFace", (uintptr_t)&glCullFace },
         { "glDeleteBuffers", (uintptr_t)&glDeleteBuffers },
         { "glDeleteFramebuffers", (uintptr_t)&glDeleteFramebuffers },
+        { "glDeleteFramebuffersOES", (uintptr_t)&glDeleteFramebuffers },
         { "glDeleteProgram", (uintptr_t)&glDeleteProgram },
         { "glDeleteRenderbuffers", (uintptr_t)&glDeleteRenderbuffers },
+        { "glDeleteRenderbuffersOES", (uintptr_t)&glDeleteRenderbuffers },
         { "glDeleteShader", (uintptr_t)&glDeleteShader },
         { "glDeleteTextures", (uintptr_t)&glDeleteTextures },
         { "glDepthFunc", (uintptr_t)&glDepthFunc },
@@ -543,13 +553,17 @@ so_default_dynlib default_dynlib[] = {
         { "glEnableVertexAttribArray", (uintptr_t)&glEnableVertexAttribArray },
         { "glFlush", (uintptr_t)&glFlush },
         { "glFramebufferRenderbuffer", (uintptr_t)&glFramebufferRenderbuffer },
+        { "glFramebufferRenderbufferOES", (uintptr_t)&glFramebufferRenderbuffer },
         { "glFramebufferTexture2D", (uintptr_t)&glFramebufferTexture2D },
+        { "glFramebufferTexture2DOES", (uintptr_t) &glFramebufferTexture2D },
         { "glFrontFace", (uintptr_t)&glFrontFace },
         { "glGenBuffers", (uintptr_t)&glGenBuffers },
-        { "glGenerateMipmap", (uintptr_t)&glGenerateMipmap },
         { "glGenFramebuffers", (uintptr_t)&glGenFramebuffers },
+        { "glGenFramebuffersOES", (uintptr_t)&glGenFramebuffers },
         { "glGenRenderbuffers", (uintptr_t)&glGenRenderbuffers },
+        { "glGenRenderbuffersOES", (uintptr_t)&glGenRenderbuffers },
         { "glGenTextures", (uintptr_t)&glGenTextures },
+        { "glGenerateMipmap", (uintptr_t)&glGenerateMipmap },
         { "glGetActiveAttrib", (uintptr_t)&glGetActiveAttrib },
         { "glGetActiveUniform", (uintptr_t)&glGetActiveUniform },
         { "glGetAttribLocation", (uintptr_t)&glGetAttribLocation },
@@ -568,11 +582,15 @@ so_default_dynlib default_dynlib[] = {
         { "glLightxv", (uintptr_t)&glLightxv },
         { "glLineWidth", (uintptr_t)&glLineWidth },
         { "glLinkProgram", (uintptr_t)&glLinkProgram },
+        { "glLoadIdentity", (uintptr_t)&glLoadIdentity },
         { "glLoadMatrixf", (uintptr_t)&glLoadMatrixf },
         { "glLoadMatrixx", (uintptr_t)&glLoadMatrixx },
+        { "glMaterialf", (uintptr_t)&glMaterialf },
+        { "glMaterialfv", (uintptr_t)&glMaterialfv },
         { "glMaterialx", (uintptr_t)&ret0 },
         { "glMaterialxv", (uintptr_t)&glMaterialxv },
         { "glMatrixMode", (uintptr_t)&glMatrixMode },
+        { "glMultMatrixf", (uintptr_t)&glMultMatrixf },
         { "glNormalPointer", (uintptr_t)&glNormalPointer },
         { "glPixelStorei", (uintptr_t)&ret0 },
         { "glPolygonOffset", (uintptr_t)&glPolygonOffset },
@@ -580,6 +598,9 @@ so_default_dynlib default_dynlib[] = {
         { "glPushMatrix", (uintptr_t)&glPushMatrix },
         { "glReadPixels", (uintptr_t)&glReadPixels },
         { "glRenderbufferStorage", (uintptr_t)&glRenderbufferStorage },
+        { "glRenderbufferStorageOES", (uintptr_t)&glRenderbufferStorage },
+        { "glRotatef", (uintptr_t)&glRotatef },
+        { "glScalef", (uintptr_t)&glScalef },
         { "glScissor", (uintptr_t)&glScissor },
         { "glShadeModel", (uintptr_t)&glShadeModel },
         { "glShaderSource", (uintptr_t)&glShaderSource },
@@ -589,12 +610,15 @@ so_default_dynlib default_dynlib[] = {
         { "glStencilOp", (uintptr_t)&glStencilOp },
         { "glStencilOpSeparate", (uintptr_t)&glStencilOpSeparate },
         { "glTexCoordPointer", (uintptr_t)&glTexCoordPointer },
+        { "glTexEnvfv", (uintptr_t)&glTexEnvfv },
+        { "glTexEnvi", (uintptr_t)&glTexEnvi },
         { "glTexEnvx", (uintptr_t)&glTexEnvx },
         { "glTexEnvxv", (uintptr_t)&glTexEnvxv },
         { "glTexImage2D", (uintptr_t)&glTexImage2D },
         { "glTexParameterf", (uintptr_t)&glTexParameterf },
         { "glTexParameteri", (uintptr_t)&glTexParameteri },
         { "glTexSubImage2D", (uintptr_t)&glTexSubImage2D },
+        { "glTranslatef", (uintptr_t)&glTranslatef },
         { "glUniform1f", (uintptr_t)&glUniform1f },
         { "glUniform1fv", (uintptr_t)&glUniform1fv },
         { "glUniform1i", (uintptr_t)&glUniform1i },
@@ -612,6 +636,7 @@ so_default_dynlib default_dynlib[] = {
         { "glUniformMatrix3fv", (uintptr_t)&glUniformMatrix3fv },
         { "glUniformMatrix4fv", (uintptr_t)&glUniformMatrix4fv },
         { "glUseProgram", (uintptr_t)&glUseProgram },
+        { "glValidateProgram", (uintptr_t)&ret0 },
         { "glVertexAttrib4f", (uintptr_t)&glVertexAttrib4f },
         { "glVertexAttribPointer", (uintptr_t)&glVertexAttribPointer },
         { "glVertexPointer", (uintptr_t)&glVertexPointer },
@@ -680,18 +705,22 @@ so_default_dynlib default_dynlib[] = {
         { "iswspace", (uintptr_t)&iswspace },
         { "iswupper", (uintptr_t)&iswupper },
         { "iswxdigit", (uintptr_t)&iswxdigit },
+        { "mbrlen", (uintptr_t)&mbrlen },
+        { "mbrtowc", (uintptr_t)&mbrtowc },
         { "towlower", (uintptr_t)&towlower },
         { "towupper", (uintptr_t)&towupper },
         { "wcrtomb", (uintptr_t)&wcrtomb },
         { "wcscasecmp", (uintptr_t)&wcscasecmp },
         { "wcscmp", (uintptr_t)&wcscmp },
         { "wcscoll", (uintptr_t)&wcscoll },
+        { "wcscpy", (uintptr_t)&wcscpy },
         { "wcsftime", (uintptr_t)&wcsftime },
         { "wcslcat", (uintptr_t)&wcslcat },
         { "wcslcpy", (uintptr_t)&wcslcpy },
         { "wcslen", (uintptr_t)&wcslen },
         { "wcsncasecmp", (uintptr_t)&wcsncasecmp },
         { "wcsncpy", (uintptr_t)&wcsncpy },
+        { "wcstombs", (uintptr_t)&wcstombs },
         { "wcsxfrm", (uintptr_t)&wcsxfrm },
         { "wctob", (uintptr_t)&wctob },
         { "wctype", (uintptr_t)&wctype },
@@ -700,8 +729,6 @@ so_default_dynlib default_dynlib[] = {
         { "wmemcpy", (uintptr_t)&wmemcpy },
         { "wmemmove", (uintptr_t)&wmemmove },
         { "wmemset", (uintptr_t)&wmemset },
-        { "mbrlen", (uintptr_t)&mbrlen },
-        { "mbrtowc", (uintptr_t)&mbrtowc },
 
 
         // libdl
@@ -829,19 +856,24 @@ so_default_dynlib default_dynlib[] = {
 
 
         // zlib
-        { "gzopen", (uintptr_t)&gzopen },
-        { "gzgets", (uintptr_t)&gzgets },
-        { "gzclose", (uintptr_t)&gzclose },
-        { "compressBound", (uintptr_t)&compressBound },
+        { "adler32", (uintptr_t)&adler32 },
         { "compress", (uintptr_t)&compress },
-        { "uncompress", (uintptr_t)&uncompress },
-        { "deflateInit_", (uintptr_t)&deflateInit_ },
+        { "compressBound", (uintptr_t)&compressBound },
+        { "crc32", (uintptr_t)&crc32 },
         { "deflate", (uintptr_t)&deflate },
         { "deflateEnd", (uintptr_t)&deflateEnd },
-        { "inflateInit_", (uintptr_t)&inflateInit_ },
+        { "deflateInit2_", (uintptr_t)&deflateInit2_ },
+        { "deflateInit_", (uintptr_t)&deflateInit_ },
+        { "deflateReset", (uintptr_t)&deflateReset },
+        { "gzclose", (uintptr_t)&gzclose },
+        { "gzgets", (uintptr_t)&gzgets },
+        { "gzopen", (uintptr_t)&gzopen },
         { "inflate", (uintptr_t)&inflate },
         { "inflateEnd", (uintptr_t)&inflateEnd },
         { "inflateInit2_", (uintptr_t)&inflateInit2_ },
+        { "inflateInit_", (uintptr_t)&inflateInit_ },
+        { "inflateReset", (uintptr_t)&inflateReset },
+        { "uncompress", (uintptr_t)&uncompress },
 };
 
 void resolve_imports(so_module* mod) {
