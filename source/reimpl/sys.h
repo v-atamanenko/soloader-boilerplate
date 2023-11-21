@@ -3,8 +3,8 @@
  *
  * Implementations and wrappers for system-related functions.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2022 Rinnegatamante
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2022      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
@@ -14,17 +14,25 @@
 #ifndef SOLOADER_SYS_H
 #define SOLOADER_SYS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sys/time.h>
 
 int clock_gettime_soloader(__attribute__((unused)) int c, struct timespec *t);
 
 int nanosleep_soloader(const struct timespec *rqtp,
-        __attribute__((unused)) struct timespec *rmtp);
+                       __attribute__((unused)) struct timespec *rmtp);
 
 int system_property_get(const char *name, char *value);
 
-void assert2(const char* f, int l, const char* func, const char* msg);
+void assert2(const char *f, int l, const char *func, const char *msg);
 
 void syscall(int c);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_SYS_H

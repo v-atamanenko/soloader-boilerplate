@@ -32,6 +32,11 @@ if (USE_SCELIBC_IO)
   add_definitions(-DUSE_SCELIBC_IO)
 endif()
 
+option(USE_CG_SHADERS "Use Cg shaders from app0:/shaders/ and dump unknown GLSL shaders to DATA_PATH" OFF)
+if (USE_CG_SHADERS)
+  add_definitions(-DUSE_CG_SHADERS)
+endif()
+
 add_definitions(-DDATA_PATH="${DATA_PATH}" -DSO_PATH="${SO_PATH}")
 
 # makes sincos, sincosf, etc. visible

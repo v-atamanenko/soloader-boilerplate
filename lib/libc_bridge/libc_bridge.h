@@ -1,6 +1,10 @@
 #ifndef __SCE_LIBC_BRIDGE_H__
 #define __SCE_LIBC_BRIDGE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <setjmp.h>
 
@@ -51,6 +55,7 @@ int sceLibcBridge_setjmp(jmp_buf env);
 void sceLibcBridge_longjmp(jmp_buf env, int val);
 
 FILE * sceLibcBridge_fdopen(int fd, const char *mode);
+int sceLibcBridge_fileno(FILE *stream);
 int sceLibcBridge_fgetc(FILE *stream);
 FILE * sceLibcBridge_freopen(const char * filename, const char * mode, FILE * stream);
 int sceLibcBridge_putc(int c, FILE *stream);
@@ -62,4 +67,8 @@ wint_t sceLibcBridge_getwc(FILE *stream);
 wint_t sceLibcBridge_ungetwc(wint_t c, FILE *stream);
 int sceLibcBridge_vfprintf(FILE * stream, const char * format, va_list args);
 
+#ifdef __cplusplus
+};
 #endif
+
+#endif // __SCE_LIBC_BRIDGE_H__

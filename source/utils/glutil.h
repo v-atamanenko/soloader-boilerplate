@@ -3,8 +3,8 @@
  *
  * OpenGL API initializer, related functions.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2021 Rinnegatamante
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
@@ -14,24 +14,31 @@
 #ifndef SOLOADER_GLUTIL_H
 #define SOLOADER_GLUTIL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <vitaGL.h>
 
 void gl_preload();
 void gl_init();
 void gl_swap();
 
+#ifdef USE_CG_SHADERS
 void glShaderSourceHook(GLuint shader, GLsizei count, const GLchar **string, const GLint *_length);
 void glCompileShaderHook(GLuint shader);
+#endif
 
 EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor);
-EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config, EGLint attribute, EGLint * value);
+EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config, EGLint attribute, EGLint *value);
+EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGLint *value);
 EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribute, EGLint *value);
-EGLBoolean eglChooseConfig (EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config);
+EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig*configs, EGLint config_size, EGLint *num_config);
 EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list);
-EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, void * win, const EGLint *attrib_list);
+EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, void *win, const EGLint *attrib_list);
 EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
-EGLBoolean eglDestroyContext (EGLDisplay dpy, EGLContext ctx);
-EGLBoolean eglDestroySurface (EGLDisplay dpy, EGLSurface surface);
+EGLBoolean eglDestroyContext(EGLDisplay dpy, EGLContext ctx);
+EGLBoolean eglDestroySurface(EGLDisplay dpy, EGLSurface surface);
 EGLBoolean eglTerminate(EGLDisplay dpy);
 
 #define EGL_CONFIG_ID                     0x3028
@@ -91,5 +98,18 @@ EGLBoolean eglTerminate(EGLDisplay dpy);
 #define EGL_TRANSPARENT_BLUE_VALUE        0x3035
 #define EGL_RGB_BUFFER                    0x308E
 #define EGL_NONE                          0x3038
+#define EGL_TEXTURE_RGBA                  0x305E
+#define EGL_TEXTURE_2D                    0x305F
+#define EGL_PBUFFER_BIT                   0x0001
+#define EGL_PIXMAP_BIT                    0x0002
+#define EGL_WINDOW_BIT                    0x0004
+#define EGL_OPENGL_ES_BIT                 0x0001
+#define EGL_OPENVG_BIT                    0x0002
+#define EGL_OPENGL_ES2_BIT                0x0004
+#define EGL_OPENGL_BIT                    0x0008
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_GLUTIL_H

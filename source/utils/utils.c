@@ -87,7 +87,7 @@ void str_remove(char *str, const char *sub) {
 }
 
 void str_replace(char *target, const char *needle, const char *replacement) {
-    char buffer[1024] = { 0 };
+    char buffer[256 * 1024] = { 0 };
     char *insert_point = &buffer[0];
     const char *tmp = target;
     size_t needle_len = strlen(needle);
@@ -128,7 +128,7 @@ bool is_dir(char* path) {
     return false;
 }
 
-char * get_string_sha1(uint8_t* buf, long size) {
+char * get_string_sha1(uint8_t* buf, size_t size) {
     uint8_t sha1[20];
     SHA1_CTX ctx;
     sha1_init(&ctx);

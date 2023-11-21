@@ -1,6 +1,11 @@
-/*	$OpenBSD: tolower_.c,v 1.11 2015/09/19 04:02:21 guenther Exp $ */
 /*
+ * reimpl/_struct_converters.c
+ *
+ * `ctype`, `tolower_tab`, `toupper_tab` as they are on Bionic (Android),
+ * we provide them in `dynlib.c` when the target links to them dynamically.
+ *
  * Written by J.T. Conklin <jtc@netbsd.org>.
+ *
  * Public domain.
  */
 

@@ -16,12 +16,15 @@
 #ifndef SOLOADER_PTHR_H
 #define SOLOADER_PTHR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <pthread.h>
 #include <semaphore.h>
 
-typedef struct
-{
-    pthread_attr_t * real_ptr; // replaces `uint32_t flags;`
+typedef struct {
+    pthread_attr_t *real_ptr; // replaces `uint32_t flags;`
     int32_t magic; // replaces `void * stack_base;`
     size_t stack_size;
     size_t guard_size;
@@ -29,14 +32,12 @@ typedef struct
     int32_t sched_priority;
 } pthread_attr_t_bionic;
 
-typedef struct
-{
-    pthread_mutex_t * real_ptr; // replaces `int volatile value;`
+typedef struct {
+    pthread_mutex_t *real_ptr; // replaces `int volatile value;`
 } pthread_mutex_t_bionic;
 
-typedef struct
-{
-    pthread_cond_t * real_ptr; // replaces `int volatile value;`
+typedef struct {
+    pthread_cond_t *real_ptr; // replaces `int volatile value;`
 } pthread_cond_t_bionic;
 
 // pthread_t is same size on bionic and newlib
@@ -79,14 +80,18 @@ int pthread_attr_destroy_soloader(pthread_attr_t_bionic *attr);
 int pthread_attr_setdetachstate_soloader(pthread_attr_t_bionic *attr, int state);
 int pthread_attr_setstacksize_soloader(pthread_attr_t_bionic *attr, size_t stacksize);
 
-int pthread_setname_np_soloader(pthread_t thread, const char* thread_name);
+int pthread_setname_np_soloader(pthread_t thread, const char *thread_name);
 
-int sem_init_soloader (int * sem, int pshared, unsigned int value);
-int sem_destroy_soloader(int * sem);
-int sem_getvalue_soloader (int * sem, int * sval);
-int sem_post_soloader (int * sem);
-int sem_timedwait_soloader (int * sem, const struct timespec * abstime);
-int sem_trywait_soloader (int * sem);
-int sem_wait_soloader (int * sem);
+int sem_init_soloader(int *sem, int pshared, unsigned int value);
+int sem_destroy_soloader(int *sem);
+int sem_getvalue_soloader(int *sem, int *sval);
+int sem_post_soloader(int *sem);
+int sem_timedwait_soloader(int *sem, const struct timespec *abstime);
+int sem_trywait_soloader(int *sem);
+int sem_wait_soloader(int *sem);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_PTHR_H

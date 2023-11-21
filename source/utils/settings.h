@@ -11,6 +11,7 @@
 
 #ifndef SOLOADER_SETTINGS_H
 #define SOLOADER_SETTINGS_H
+
 #include "stdbool.h"
 
 #ifdef __cplusplus

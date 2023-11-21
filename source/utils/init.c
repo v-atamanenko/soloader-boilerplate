@@ -1,7 +1,7 @@
 /*
  * utils/init.c
  *
- * Copyright (C) 2021 Andy Nguyen
+ * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021-2022 Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
@@ -56,7 +56,7 @@ void soloader_init_all() {
     scePowerSetGpuXbarClockFrequency(166);
 
 #ifdef USE_SCELIBC_IO
-    fios_init();
+    fios_init(DATA_PATH);
     log_info("fios init passed.");
 #endif
 

@@ -1,3 +1,17 @@
+/*
+ * reimpl/_struct_converters.c
+ *
+ * Converters for `dirent` struct, `stat` struct, and `open()` flags that deal
+ * with newlib (Vita) and musl/bionic (Android) incompatibilities
+ *
+ * This file has to be #included in `reimpl/io.c` and not compiled on its own.
+ *
+ * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license. See the LICENSE file for details.
+ */
+
 #define SC_INLINE static inline __attribute__((always_inline))
 
 #define MUSL_O_WRONLY         01

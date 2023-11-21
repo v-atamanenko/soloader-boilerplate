@@ -17,6 +17,7 @@ modules:
           sceLibcBridge_fgetc: 0x672C58E0
           sceLibcBridge_fgetpos: 0x3CDA3118
           sceLibcBridge_fgets: 0xBA14322F
+          sceLibcBridge_fileno: 0xFEC1502E
           sceLibcBridge_fopen: 0xFFFBE239
           sceLibcBridge_fprintf: 0xE0C79764
           sceLibcBridge_fputc: 0x7E6A6108

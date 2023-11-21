@@ -1,7 +1,8 @@
 /*
- * reimpl/env.h
+ * reimpl/env.c
  *
- * Implemetation for getenv()/setenv() functions with predefined environment variables.
+ * Implementation for `getenv()`/`setenv()` functions with predefined
+ * environment variables.
  *
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
@@ -12,7 +13,16 @@
 #ifndef SOLOADER_ENV_H
 #define SOLOADER_ENV_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 char *getenv_soloader(const char *name);
+
 int setenv_soloader(const char *name, const char *value, int overwrite);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_ENV_H

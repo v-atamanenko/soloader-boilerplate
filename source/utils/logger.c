@@ -75,8 +75,8 @@ void _log_debug(const char *fi, int li, const char *fn, const char* fmt, ...) {
 #ifdef DEBUG_SOLOADER
     LOG_LOCK
 
-    sceClibSnprintf(buffer_a, sizeof(buffer_a), "[DBG][%s:%d][%s] %s\n",
-                    fi, li, fn, fmt);
+    sceClibSnprintf(buffer_a, sizeof(buffer_a), "[DBG] %s\n",
+                    fmt);
 
     LOG_PRINT
     LOG_UNLOCK

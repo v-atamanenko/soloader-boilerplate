@@ -1,7 +1,8 @@
 /*
  * reimpl/env.c
  *
- * Implemetation for getenv()/setenv() functions with predefined environment variables.
+ * Implementation for `getenv()`/`setenv()` functions with predefined
+ * environment variables.
  *
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *

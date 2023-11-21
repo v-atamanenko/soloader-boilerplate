@@ -3,8 +3,8 @@
  *
  * Implementations for different Android logging functions.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2022 Rinnegatamante
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2022      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
@@ -15,27 +15,30 @@
 
 #include "utils/logger.h"
 
-int __android_log_write(int prio, const char* tag, const char* text) {
-    switch (prio) {
-        case ANDROID_LOG_INFO:
-            logv_info("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_WARN:
-            logv_warn("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_ERROR:
-        case ANDROID_LOG_FATAL:
-            logv_error("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_UNKNOWN:
-        case ANDROID_LOG_DEFAULT:
-        case ANDROID_LOG_VERBOSE:
-        case ANDROID_LOG_DEBUG:
-        case ANDROID_LOG_SILENT:
-        default:
-            logv_debug("[ALOG][%s] %s", tag, text);
-            break;
+#define print_common \
+    switch (prio) { \
+        case ANDROID_LOG_INFO: \
+            logv_info("[ALOG][%s] %s", tag, text); \
+            break; \
+        case ANDROID_LOG_WARN: \
+            logv_warn("[ALOG][%s] %s", tag, text); \
+            break; \
+        case ANDROID_LOG_ERROR: \
+        case ANDROID_LOG_FATAL: \
+            logv_error("[ALOG][%s] %s", tag, text); \
+            break; \
+        case ANDROID_LOG_UNKNOWN: \
+        case ANDROID_LOG_DEFAULT: \
+        case ANDROID_LOG_VERBOSE: \
+        case ANDROID_LOG_DEBUG: \
+        case ANDROID_LOG_SILENT: \
+        default: \
+            logv_debug("[ALOG][%s] %s", tag, text); \
+            break; \
     }
+
+int __android_log_write(int prio, const char* tag, const char* text) {
+    print_common
     return 0;
 }
 
@@ -47,26 +50,7 @@ int __android_log_print(int prio, const char* tag, const char* fmt, ...) {
     sceClibVsnprintf(text, sizeof(text), fmt, list);
     va_end(list);
 
-    switch (prio) {
-        case ANDROID_LOG_INFO:
-            logv_info("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_WARN:
-            logv_warn("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_ERROR:
-        case ANDROID_LOG_FATAL:
-            logv_error("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_UNKNOWN:
-        case ANDROID_LOG_DEFAULT:
-        case ANDROID_LOG_VERBOSE:
-        case ANDROID_LOG_DEBUG:
-        case ANDROID_LOG_SILENT:
-        default:
-            logv_debug("[ALOG][%s] %s", tag, text);
-            break;
-    }
+    print_common
 
     return 0;
 }
@@ -76,26 +60,7 @@ int __android_log_vprint(int prio, const char* tag, const char* fmt, va_list ap)
 
     sceClibVsnprintf(text, sizeof(text), fmt, ap);
 
-    switch (prio) {
-        case ANDROID_LOG_INFO:
-            logv_info("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_WARN:
-            logv_warn("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_ERROR:
-        case ANDROID_LOG_FATAL:
-            logv_error("[ALOG][%s] %s", tag, text);
-            break;
-        case ANDROID_LOG_UNKNOWN:
-        case ANDROID_LOG_DEFAULT:
-        case ANDROID_LOG_VERBOSE:
-        case ANDROID_LOG_DEBUG:
-        case ANDROID_LOG_SILENT:
-        default:
-            logv_debug("[ALOG][%s] %s", tag, text);
-            break;
-    }
+    print_common
 
     return 0;
 }

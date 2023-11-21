@@ -3,8 +3,8 @@
  *
  * OpenGL API initializer, related functions.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2021 Rinnegatamante
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
@@ -23,23 +23,7 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/io/stat.h>
 
-#define GLSL_PATH DATA_PATH
-#define GXP_PATH "app0:shaders"
-
-void gl_preload() {
-    if (!file_exists("ur0:/data/libshacccg.suprx")
-        && !file_exists("ur0:/data/external/libshacccg.suprx")) {
-        fatal_error("Error: libshacccg.suprx is not installed. Google \"ShaRKBR33D\" for quick installation.");
-    }
-}
-
-void gl_init() {
-    vglInitExtended(0, 960, 544, 6 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
-}
-
-void gl_swap() {
-    vglSwapBuffers(GL_FALSE);
-}
+#ifdef USE_CG_SHADERS
 
 GLboolean skip_next_compile = GL_FALSE;
 char next_shader_fname[128];
@@ -83,7 +67,7 @@ void glShaderSourceHook(GLuint shader, GLsizei count, const GLchar **string,
         return;
     }
 
-    int total_length = 0;
+    unsigned int total_length = 0;
 
     for (int i = 0; i < count; ++i) {
         if (!_length) {
@@ -94,20 +78,22 @@ void glShaderSourceHook(GLuint shader, GLsizei count, const GLchar **string,
     }
 
     char * str = malloc(total_length+1);
-    int l = 0;
+    {
+        unsigned int l = 0;
 
-    for (int i = 0; i < count; ++i) {
-        if (!_length) {
-            memcpy(str + l, string[i], strlen(string[i]));
-            l += strlen(string[i]);
-        } else {
-            memcpy(str + l, string[i], _length[i]);
-            l += _length[i];
+        for (int i = 0; i < count; ++i) {
+            if (!_length) {
+                memcpy(str + l, string[i], strlen(string[i]));
+                l += strlen(string[i]);
+            } else {
+                memcpy(str + l, string[i], _length[i]);
+                l += _length[i];
+            }
         }
-    }
-    str[total_length] = '\0';
+        str[total_length] = '\0';
 
-    load_shader(shader, str, total_length);
+        load_shader(shader, str, total_length);
+    }
     free(str);
 }
 
@@ -125,6 +111,28 @@ void glCompileShaderHook(GLuint shader) {
     skip_next_compile = GL_FALSE;
 }
 
+#endif
+
+void gl_preload() {
+    if (!file_exists("ur0:/data/libshacccg.suprx")
+        && !file_exists("ur0:/data/external/libshacccg.suprx")) {
+        fatal_error("Error: libshacccg.suprx is not installed. "
+                    "Google \"ShaRKBR33D\" for quick installation.");
+    }
+
+#ifndef USE_CG_SHADERS
+    vglSetSemanticBindingMode(VGL_MODE_POSTPONED);
+#endif
+}
+
+void gl_init() {
+    vglInitExtended(0, 960, 544, 6 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
+}
+
+void gl_swap() {
+    vglSwapBuffers(GL_FALSE);
+}
+
 EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor) {
     logv_debug("eglInitialize(0x%x)", (int)dpy);
 
@@ -136,12 +144,38 @@ EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor) {
     return EGL_TRUE;
 }
 
-EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribute, EGLint *value)
-{
+EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute,
+                           EGLint *value) {
     EGLBoolean ret = EGL_TRUE;
     switch (attribute) {
         case EGL_CONFIG_ID:
-            ret = 1;
+            *value = 0;
+            break;
+        case EGL_CONTEXT_CLIENT_TYPE:
+            *value = EGL_OPENGL_ES_API;
+            break;
+        case EGL_CONTEXT_CLIENT_VERSION:
+            *value = 2;
+            break;
+        case EGL_RENDER_BUFFER:
+            *value = EGL_BACK_BUFFER;
+            break;
+        default:
+            logv_error("eglQueryContext %x  EGL_BAD_ATTRIBUTE", attribute);
+            ret = EGL_FALSE;
+            break;
+    }
+
+    return ret;
+}
+
+
+EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface,
+                           EGLint attribute, EGLint *value) {
+    EGLBoolean ret = EGL_TRUE;
+    switch (attribute) {
+        case EGL_CONFIG_ID:
+            *value = 0;
             break;
         case EGL_WIDTH:
             *value = 960;
@@ -150,13 +184,12 @@ EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribu
             *value = 544;
             break;
         case EGL_TEXTURE_FORMAT:
-            *value = 2; // NoTexture = 0, RGB = 1, RGBA = 2
+            *value =  EGL_TEXTURE_RGBA; // NoTexture = 0, RGB = 1, RGBA = 2
             break;
         case EGL_TEXTURE_TARGET:
-            *value = 1;
+            *value = EGL_TEXTURE_2D;
             break;
         case EGL_SWAP_BEHAVIOR:
-            ret = EGL_TRUE;
             *value = EGL_BUFFER_PRESERVED;
             break;
         case EGL_LARGEST_PBUFFER:
@@ -201,10 +234,8 @@ EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribu
 }
 
 
-EGLBoolean eglGetConfigAttrib(EGLDisplay display,
-                              EGLConfig config,
-                              EGLint attribute,
-                              EGLint * value) {
+EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config,
+                              EGLint attribute, EGLint * value) {
     switch (attribute) {
         case EGL_ALPHA_SIZE: {
             *value = 8;
@@ -239,7 +270,7 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display,
             break;
         }
         case EGL_CONFIG_ID: {
-            *value = 1;
+            *value = 0;
             break;
         }
         case EGL_CONFORMANT: {
@@ -247,11 +278,11 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display,
             break;
         }
         case EGL_DEPTH_SIZE: {
-            *value = 0;
+            *value = 24;
             break;
         }
         case EGL_GREEN_SIZE: {
-            *value = 0;
+            *value = 8;
             break;
         }
         case EGL_LEVEL: {
@@ -295,11 +326,11 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display,
             break;
         }
         case EGL_RED_SIZE: {
-            *value = 0;
+            *value = 8;
             break;
         }
         case EGL_RENDERABLE_TYPE: {
-            *value = 0;
+            *value = 0 | EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT | EGL_OPENGL_BIT;
             break;
         }
         case EGL_SAMPLE_BUFFERS: {
@@ -311,11 +342,11 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display,
             break;
         }
         case EGL_STENCIL_SIZE: {
-            *value = 0;
+            *value = 8;
             break;
         }
         case EGL_SURFACE_TYPE: {
-            *value = 0;
+            *value = 0 | EGL_WINDOW_BIT;
             break;
         }
         case EGL_TRANSPARENT_TYPE: {
@@ -340,7 +371,9 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display,
     return EGL_TRUE;
 }
 
-EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config) {
+EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list,
+                           EGLConfig *configs, EGLint config_size,
+                           EGLint *num_config) {
     if (!num_config) {
         return EGL_BAD_PARAMETER;
     }
@@ -356,15 +389,21 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
     return EGL_TRUE;
 }
 
-EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list) {
+EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config,
+                            EGLContext share_context,
+                            const EGLint *attrib_list) {
+    // Just something that is a valid pointer which can be freed later
     return strdup("ctx");
 }
 
-EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, void * win, const EGLint *attrib_list) {
+EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config,
+                                  void * win, const EGLint *attrib_list) {
+    // Just something that is a valid pointer which can be freed later
     return strdup("surface");
 }
 
-EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx) {
+EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read,
+                          EGLContext ctx) {
     return EGL_TRUE;
 }
 

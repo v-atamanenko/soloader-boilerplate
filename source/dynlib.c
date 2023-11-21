@@ -3,8 +3,8 @@
  *
  * Resolving dynamic imports of the .so.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2021 Rinnegatamante
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
@@ -341,7 +341,7 @@ so_default_dynlib default_dynlib[] = {
         { "setsockopt", (uintptr_t)&setsockopt },
         { "shutdown", (uintptr_t)&shutdown },
         { "socket", (uintptr_t)&socket },
-        
+
 
         // Memory
         { "calloc", (uintptr_t)&calloc },
@@ -357,7 +357,7 @@ so_default_dynlib default_dynlib[] = {
         { "munmap", (uintptr_t)&munmap },
         { "realloc", (uintptr_t)&realloc },
         { "valloc", (uintptr_t)&valloc },
-        
+
 
         // IO
         { "close", (uintptr_t)&close_soloader },
@@ -381,6 +381,7 @@ so_default_dynlib default_dynlib[] = {
             { "fgetc", (uintptr_t)&sceLibcBridge_fgetc },
             { "fgetpos", (uintptr_t)&sceLibcBridge_fgetpos },
             { "fgets", (uintptr_t)&sceLibcBridge_fgets },
+            { "fileno", (uintptr_t)&sceLibcBridge_fileno },
             { "fputc", (uintptr_t)&sceLibcBridge_fputc },
             { "fputs", (uintptr_t)&sceLibcBridge_fputs },
             { "fread", (uintptr_t)&sceLibcBridge_fread },
@@ -406,6 +407,7 @@ so_default_dynlib default_dynlib[] = {
             { "fgetc", (uintptr_t)&fgetc },
             { "fgetpos", (uintptr_t)&fgetpos },
             { "fgets", (uintptr_t)&fgets },
+            { "fileno", (uintptr_t)&fileno },
             { "fputc", (uintptr_t)&fputc },
             { "fputs", (uintptr_t)&fputs },
             { "fread", (uintptr_t)&fread },
@@ -429,7 +431,6 @@ so_default_dynlib default_dynlib[] = {
         { "chdir", (uintptr_t)&chdir },
         { "chmod", (uintptr_t)&chmod },
         { "dup", (uintptr_t)&dup },
-        { "fileno", (uintptr_t)&fileno },
         { "fseeko", (uintptr_t)&fseeko }, // TODO: wrap normal fseek for SceLibc version?
         { "ftello", (uintptr_t)&ftello },
         { "ftruncate", (uintptr_t)&ftruncate },
@@ -487,6 +488,7 @@ so_default_dynlib default_dynlib[] = {
         { "eglGetProcAddress", (uintptr_t)&eglGetProcAddress },
         { "eglInitialize", (uintptr_t)&eglInitialize },
         { "eglMakeCurrent", (uintptr_t)&eglMakeCurrent },
+        { "eglQueryContext", (uintptr_t)&eglQueryContext },
         { "eglQuerySurface", (uintptr_t)&eglQuerySurface },
         { "eglSwapBuffers", (uintptr_t)&eglSwapBuffers },
         { "eglTerminate", (uintptr_t)&eglTerminate },
@@ -504,6 +506,7 @@ so_default_dynlib default_dynlib[] = {
         { "glBindRenderbuffer", (uintptr_t)&glBindRenderbuffer },
         { "glBindFramebufferOES", (uintptr_t)&glBindFramebuffer },
         { "glBindTexture", (uintptr_t)&glBindTexture },
+        { "glBlendColor", (uintptr_t)&ret0 },
         { "glBlendEquation", (uintptr_t)&glBlendEquation },
         { "glBlendEquationOES", (uintptr_t)&glBlendEquation },
         { "glBlendEquationSeparate", (uintptr_t)&glBlendEquationSeparate },
@@ -523,7 +526,11 @@ so_default_dynlib default_dynlib[] = {
         { "glColor4x", (uintptr_t)&glColor4x },
         { "glColorMask", (uintptr_t)&glColorMask },
         { "glColorPointer", (uintptr_t)&glColorPointer },
+#ifdef USE_CG_SHADERS
+        { "glCompileShader", (uintptr_t)&glCompileShaderHook },
+#else
         { "glCompileShader", (uintptr_t)&glCompileShader },
+#endif
         { "glCompressedTexImage2D", (uintptr_t)&glCompressedTexImage2D },
         { "glCompressedTexSubImage2D", (uintptr_t)&ret0 },
         { "glCopyTexImage2D", (uintptr_t)&glCopyTexImage2D },
@@ -585,6 +592,8 @@ so_default_dynlib default_dynlib[] = {
         { "glLoadIdentity", (uintptr_t)&glLoadIdentity },
         { "glLoadMatrixf", (uintptr_t)&glLoadMatrixf },
         { "glLoadMatrixx", (uintptr_t)&glLoadMatrixx },
+        { "glMapBuffer", (uintptr_t)&glMapBuffer },
+        { "glMapBufferOES", (uintptr_t)&glMapBuffer },
         { "glMaterialf", (uintptr_t)&glMaterialf },
         { "glMaterialfv", (uintptr_t)&glMaterialfv },
         { "glMaterialx", (uintptr_t)&ret0 },
@@ -600,10 +609,15 @@ so_default_dynlib default_dynlib[] = {
         { "glRenderbufferStorage", (uintptr_t)&glRenderbufferStorage },
         { "glRenderbufferStorageOES", (uintptr_t)&glRenderbufferStorage },
         { "glRotatef", (uintptr_t)&glRotatef },
+        { "glSampleCoverage", (uintptr_t)&ret0 },
         { "glScalef", (uintptr_t)&glScalef },
         { "glScissor", (uintptr_t)&glScissor },
         { "glShadeModel", (uintptr_t)&glShadeModel },
+#ifdef USE_CG_SHADERS
+        { "glShaderSource", (uintptr_t)&glShaderSourceHook },
+#else
         { "glShaderSource", (uintptr_t)&glShaderSource },
+#endif
         { "glStencilFunc", (uintptr_t)&glStencilFunc },
         { "glStencilFuncSeparate", (uintptr_t)&glStencilFuncSeparate },
         { "glStencilMask", (uintptr_t)&glStencilMask },
@@ -635,6 +649,8 @@ so_default_dynlib default_dynlib[] = {
         { "glUniformMatrix2fv", (uintptr_t)&glUniformMatrix2fv },
         { "glUniformMatrix3fv", (uintptr_t)&glUniformMatrix3fv },
         { "glUniformMatrix4fv", (uintptr_t)&glUniformMatrix4fv },
+        { "glUnmapBuffer", (uintptr_t)&glUnmapBuffer },
+        { "glUnmapBufferOES", (uintptr_t)&glUnmapBuffer },
         { "glUseProgram", (uintptr_t)&glUseProgram },
         { "glValidateProgram", (uintptr_t)&ret0 },
         { "glVertexAttrib4f", (uintptr_t)&glVertexAttrib4f },
@@ -742,7 +758,7 @@ so_default_dynlib default_dynlib[] = {
         { "__errno", (uintptr_t)&__errno_soloader },
         { "strerror", (uintptr_t)&strerror_soloader },
         { "strerror_r", (uintptr_t)&strerror_r_soloader },
-        
+
 
         // Strings
         { "memchr", (uintptr_t)&memchr },
@@ -770,7 +786,7 @@ so_default_dynlib default_dynlib[] = {
         { "strtok", (uintptr_t)&strtok },
         { "strtok_r", (uintptr_t)&strtok_r },
         { "strxfrm", (uintptr_t)&strxfrm },
-        
+
 
         // Syscalls
         { "syscall", (uintptr_t)&syscall },
@@ -849,8 +865,8 @@ so_default_dynlib default_dynlib[] = {
         { "bsd_signal", (uintptr_t)&signal },
         { "raise", (uintptr_t)&raise },
         { "sigaction", (uintptr_t)&sigaction },
-        
-        
+
+
         // Locale
         { "setlocale", (uintptr_t)&setlocale },
 

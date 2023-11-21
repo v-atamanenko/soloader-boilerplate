@@ -10,6 +10,14 @@
 #ifndef SOLOADER_INIT_H
 #define SOLOADER_INIT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void soloader_init_all();
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_INIT_H

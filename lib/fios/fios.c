@@ -1,4 +1,5 @@
-/* fios.c -- use FIOS2 for optimized I/O
+/*
+ * fios.c -- use FIOS2 for optimized I/O
  *
  * Copyright (C) 2021 Andy Nguyen
  *
@@ -22,7 +23,7 @@ static int64_t g_DHStorage[SCE_FIOS_DH_STORAGE_SIZE(32, MAX_PATH_LENGTH) / sizeo
 static SceFiosRamCacheContext g_RamCacheContext = SCE_FIOS_RAM_CACHE_CONTEXT_INITIALIZER;
 static char *g_RamCacheWorkBuffer;
 
-int fios_init(void) {
+int fios_init(const char * path) {
     int res;
 
     SceFiosParams params = SCE_FIOS_PARAMS_INITIALIZER;
@@ -52,7 +53,7 @@ int fios_init(void) {
     if (!g_RamCacheWorkBuffer)
         return -1;
 
-    g_RamCacheContext.pPath = DATA_PATH;
+    g_RamCacheContext.pPath = path;
     g_RamCacheContext.pWorkBuffer = g_RamCacheWorkBuffer;
     g_RamCacheContext.workBufferSize = RAMCACHEBLOCKNUM * RAMCACHEBLOCKSIZE;
     g_RamCacheContext.blockSize = RAMCACHEBLOCKSIZE;

@@ -3,8 +3,8 @@
  *
  * Common dialog for error messages and cheats input.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2021 fgsfds
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2021      fgsfds
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
@@ -66,8 +66,7 @@ void _utf8_to_utf16(const uint8_t *src, uint16_t *dst) {
     *dst = '\0';
 }
 
-__attribute__((unused)) int init_ime_dialog(const char *title,
-                                            const char *initial_text) {
+int init_ime_dialog(const char *title, const char *initial_text) {
     sceClibMemset(ime_title_utf16, 0, sizeof(ime_title_utf16));
     sceClibMemset(ime_initial_text_utf16, 0, sizeof(ime_initial_text_utf16));
     sceClibMemset(ime_input_text_utf16, 0, sizeof(ime_input_text_utf16));
@@ -90,7 +89,7 @@ __attribute__((unused)) int init_ime_dialog(const char *title,
     return sceImeDialogInit(&param);
 }
 
-__attribute__((unused)) char *get_ime_dialog_result(void) {
+char *get_ime_dialog_result(void) {
     if (sceImeDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return NULL;
 

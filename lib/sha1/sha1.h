@@ -9,6 +9,10 @@
 #ifndef SHA1_H
 #define SHA1_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>
 
@@ -20,16 +24,20 @@ typedef unsigned char BYTE;             // 8-bit byte
 typedef unsigned int  WORD;             // 32-bit word, change to "long" for 16-bit machines
 
 typedef struct {
-	BYTE data[64];
-	WORD datalen;
-	unsigned long long bitlen;
-	WORD state[5];
-	WORD k[4];
+    BYTE data[64];
+    WORD datalen;
+    unsigned long long bitlen;
+    WORD state[5];
+    WORD k[4];
 } SHA1_CTX;
 
 /*********************** FUNCTION DECLARATIONS **********************/
 void sha1_init(SHA1_CTX *ctx);
 void sha1_update(SHA1_CTX *ctx, const BYTE data[], size_t len);
 void sha1_final(SHA1_CTX *ctx, BYTE hash[]);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif   // SHA1_H

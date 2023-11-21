@@ -12,6 +12,14 @@
 #ifndef SOLOADER_IOCTL_H
 #define SOLOADER_IOCTL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int ioctl_soloader(int fildes, int request, ... /* arg */);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_IOCTL_H

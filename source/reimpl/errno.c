@@ -1,3 +1,16 @@
+/*
+ * reimpl/errno.c
+ *
+ * Provides wrappers for errno-related functions that translate the underlying
+ * error numbers and their corresponding descriptions into Bionic (Android)
+ * format, so that the target can perform its error checking normally.1222222222e34
+ *
+ * Copyright (C) 2023 Volodymyr Atamanenko
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license. See the LICENSE file for details.
+ */
+
 #include "reimpl/errno.h"
 
 #include <sys/errno.h>
@@ -122,7 +135,7 @@ char * strerror_soloader(int error_number) {
 			return (char *) errno_translation[i].strerror;
 	}
 
-	logv_error("[strerror]: Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
+	logv_warn("[strerror]: Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
 	return (char *) errno_translation[0].strerror;
 }
 
@@ -135,7 +148,7 @@ int strerror_r_soloader(int error_number, char* buf, size_t buf_len) {
 	}
 
 	if (err == NULL) {
-		logv_error("[strerror_r]: Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
+		logv_warn("[strerror_r]: Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
 		err = errno_translation[0].strerror;
 	}
 

@@ -13,6 +13,14 @@
 #ifndef SOLOADER_PATCH_H
 #define SOLOADER_PATCH_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void so_patch();
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // SOLOADER_PATCH_H

@@ -1,6 +1,10 @@
 #ifndef __FIOS_H__
 #define __FIOS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -77,6 +81,10 @@ void sceFiosTerminate();
 int sceFiosIOFilterAdd(int index, void *pFilterCallback, void *pFilterContext);
 void sceFiosIOFilterCache();
 
-int fios_init(void);
+int fios_init(const char * path);
 
+#ifdef __cplusplus
+};
 #endif
+
+#endif // __FIOS_H__

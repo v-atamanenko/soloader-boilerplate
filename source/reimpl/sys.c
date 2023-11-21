@@ -3,8 +3,8 @@
  *
  * Implementations and wrappers for system-related functions.
  *
- * Copyright (C) 2021 Andy Nguyen
- * Copyright (C) 2022 Rinnegatamante
+ * Copyright (C) 2021      Andy Nguyen
+ * Copyright (C) 2022      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
