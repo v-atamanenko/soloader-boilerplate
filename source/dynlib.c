@@ -156,6 +156,15 @@ void *dlsym_fake(void *restrict handle, const char *restrict symbol) {
     return NULL;
 }
 
+void stack_chk_fail() {
+    sceClibPrintf("[!!!] Stack has collapsed at %p\n", __builtin_return_address(0));
+}
+
+void abort_wrap() {
+   sceClibPrintf("Abort called from %p\n", __builtin_return_address(0));
+   abort();
+}
+
 so_default_dynlib default_dynlib[] = {
         // Common C/C++ internals
         { "_ZNSt8bad_castD1Ev", (uintptr_t)&_ZNSt8bad_castD1Ev },
@@ -227,7 +236,7 @@ so_default_dynlib default_dynlib[] = {
         { "__gxx_personality_v0", (uintptr_t)&__gxx_personality_v0 },
         { "__sF", (uintptr_t)&__sF_fake },
         { "__srget", (uintptr_t)&__srget },
-        { "__stack_chk_fail", (uintptr_t)&__stack_chk_fail },
+        { "__stack_chk_fail", (uintptr_t)&stack_chk_fail },
         { "__stack_chk_guard", (uintptr_t)&__stack_chk_guard },
         { "__swbuf", (uintptr_t)&__swbuf },
         { "__system_property_get", (uintptr_t)&__system_property_get },
@@ -428,6 +437,7 @@ so_default_dynlib default_dynlib[] = {
         #endif
 
         { "access", (uintptr_t)&access },
+        { "basename", (uintptr_t)&basename },
         { "chdir", (uintptr_t)&chdir },
         { "chmod", (uintptr_t)&chmod },
         { "dup", (uintptr_t)&dup },
@@ -819,7 +829,7 @@ so_default_dynlib default_dynlib[] = {
 
 
         // stdlib
-        { "abort", (uintptr_t)&abort },
+        { "abort", (uintptr_t)&abort_wrap },
         { "atof", (uintptr_t)&atof },
         { "atoi", (uintptr_t)&atoi },
         { "atol", (uintptr_t)&atol },
