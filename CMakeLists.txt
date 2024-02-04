@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 
 if (NOT DEFINED ENV{VITASDK} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  message(FATAL_ERROR "Please define VITASDK env var to point to your SDK path "
-          "or set CMAKE_TOOLCHAIN_FILE.")
+  message(FATAL_ERROR "Please define VITASDK env var to point to your SDK path or set CMAKE_TOOLCHAIN_FILE.")
 endif ()
 
-set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake"
-    CACHE PATH "Toolchain file")
+set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "Toolchain file")
 
 project(so_loader C CXX)
 
@@ -26,26 +24,41 @@ set(PARSECOREPATH "$ENV{PARSECOREPATH}" CACHE STRING "vita-parse-core main.py")
 # Game-specific definitions
 set(DATA_PATH "ux0:data/gamename/" CACHE STRING "Path to data (with trailing /)")
 set(SO_PATH "${DATA_PATH}main.so" CACHE STRING "Path to .so")
+add_definitions(-DDATA_PATH="${DATA_PATH}" -DSO_PATH="${SO_PATH}")
 
 option(USE_SCELIBC_IO "Use SceLibcBridge for IO and some other std functions" ON)
 if (USE_SCELIBC_IO)
   add_definitions(-DUSE_SCELIBC_IO)
 endif()
 
-option(USE_CG_SHADERS "Use Cg shaders from app0:/shaders/ and dump unknown GLSL shaders to DATA_PATH" OFF)
-if (USE_CG_SHADERS)
+set(SHADER_FORMAT "GLSL" CACHE STRING "Preferred shader format (one of 'GLSL', 'CG', 'GXP')")
+if (${SHADER_FORMAT} STREQUAL "GLSL")
+  add_definitions(-DUSE_GLSL_SHADERS)
+elseif (${SHADER_FORMAT} STREQUAL "CG")
   add_definitions(-DUSE_CG_SHADERS)
+elseif (${SHADER_FORMAT} STREQUAL "GXP")
+  add_definitions(-DUSE_GXP_SHADERS)
+else()
+  message(FATAL_ERROR "SHADER_FORMAT option can only be one of: 'GLSL', 'CG', 'GXP'")
 endif()
 
-add_definitions(-DDATA_PATH="${DATA_PATH}" -DSO_PATH="${SO_PATH}")
-
-# makes sincos, sincosf, etc. visible
-add_definitions(-D_GNU_SOURCE -D__POSIX_VISIBLE=999999)
+set(valid_dump_formats GLSL CG)
+option(DUMP_COMPILED_SHADERS "When using GLSL or CG shader format, cache compiled shaders on disk" ON)
+if (DUMP_COMPILED_SHADERS)
+  if (SHADER_FORMAT IN_LIST valid_dump_formats)
+    add_definitions(-DDUMP_COMPILED_SHADERS)
+  else()
+    message(WARNING "DUMP_COMPILED_SHADERS has no effect for the chosen shader format ${SHADER_FORMAT}")
+  endif()
+endif()
 
 # Unique debug definition for loader's logging to not interfere with anything
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_SOLOADER)
 endif()
+
+# makes sincos, sincosf, etc. visible
+add_definitions(-D_GNU_SOURCE -D__POSIX_VISIBLE=999999)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -O3 -g -ffast-math -mfloat-abi=softfp -Wno-deprecated")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=gnu++20 -Wno-write-strings -Wno-psabi")
@@ -56,6 +69,7 @@ add_executable(${CMAKE_PROJECT_NAME}
                source/falso_jni_impl.c
                source/patch.c
                source/reimpl/ctype_patch.c
+               source/reimpl/egl.c
                source/reimpl/env.c
                source/reimpl/errno.c
                source/reimpl/io.c
@@ -101,6 +115,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
                       ScePgf_stub
                       mathneon
                       kubridge_stub
+                      ${CMAKE_BINARY_DIR}/lib/libc_bridge/stubs/libSceLibcBridge_stub.a
                       SceHid_stub
                       SceTouch_stub
                       SceMotion_stub
@@ -112,7 +127,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
                       SceDisplay_stub
                       SceKernelDmacMgr_stub
                       SceFios2_stub
-                      ${CMAKE_BINARY_DIR}/lib/libc_bridge/stubs/libSceLibcBridge_stub.a
                       SceCtrl_stub
                       SceGxm_stub
                       ScePower_stub

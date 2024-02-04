@@ -44,7 +44,7 @@ SC_INLINE int oflags_newlib_to_oflags_musl(int flags)
     return out;
 }
 
-SC_INLINE dirent64_bionic * dirent_newlib_to_dirent_bionic(struct dirent* dirent_newlib)
+SC_INLINE dirent64_bionic * dirent_newlib_to_dirent_bionic(const struct dirent* dirent_newlib)
 {
     dirent64_bionic * ret = malloc(sizeof(dirent64_bionic));
     strncpy(ret->d_name, dirent_newlib->d_name, sizeof(ret->d_name));
@@ -54,7 +54,7 @@ SC_INLINE dirent64_bionic * dirent_newlib_to_dirent_bionic(struct dirent* dirent
     return ret;
 }
 
-SC_INLINE void stat_newlib_to_stat_bionic(struct stat * src, stat64_bionic * dst)
+SC_INLINE void stat_newlib_to_stat_bionic(const struct stat * src, stat64_bionic * dst)
 {
     if (!src) return;
     if (!dst) dst = malloc(sizeof(stat64_bionic));
