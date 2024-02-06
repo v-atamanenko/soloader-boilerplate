@@ -1,8 +1,4 @@
 /*
- * utils/glutil.h
- *
- * OpenGL API initializer, related functions.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
@@ -11,25 +7,30 @@
  * of the MIT license. See the LICENSE file for details.
  */
 
+/**
+ * @file  glutil.h
+ * @brief OpenGL API initializer, related functions.
+ */
+
 #ifndef SOLOADER_GLUTIL_H
 #define SOLOADER_GLUTIL_H
+
+#include <vitaGL.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <vitaGL.h>
+void gl_init();
 
 void gl_preload();
-void gl_init();
+
 void gl_swap();
 
-#ifdef USE_CG_SHADERS
-void glShaderSourceHook(GLuint shader, GLsizei count, const GLchar **string, const GLint *_length);
-void glCompileShaderHook(GLuint shader);
-#endif
+void glCompileShader_soloader(GLuint shader);
 
-
+void glShaderSource_soloader(GLuint shader, GLsizei count,
+                             const GLchar **string, const GLint *_length);
 
 #ifdef __cplusplus
 };

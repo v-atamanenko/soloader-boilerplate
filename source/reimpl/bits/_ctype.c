@@ -1,12 +1,12 @@
 /*
- * reimpl/_struct_converters.c
- *
- * `ctype`, `tolower_tab`, `toupper_tab` as they are on Bionic (Android),
- * we provide them in `dynlib.c` when the target links to them dynamically.
- *
  * Written by J.T. Conklin <jtc@netbsd.org>.
  *
  * Public domain.
+ */
+
+/**
+ * @file  _ctype.c
+ * @brief `ctype`, `tolower_tab`, `toupper_tab` as they are on Bionic (Android)
  */
 
 #include <stdio.h>

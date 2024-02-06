@@ -1,36 +1,62 @@
 /*
- * reimpl/egl.h
- *
- * Implementations for EGL functions.
- *
  * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
  */
 
+/**
+ * @file  egl.h
+ * @brief Implementations for EGL functions. Most of these are just stubs that
+ *        don't actually do anything, but we try to conform to the standard
+ *        as closely as possible in terms of return values, etc.
+ */
+
 #ifndef SOLOADER_EGL_H
 #define SOLOADER_EGL_H
+
+#include <vitaGL.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <vitaGL.h>
-
 EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor);
-EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config, EGLint attribute, EGLint *value);
-EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGLint *value);
-EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribute, EGLint *value);
-EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig*configs, EGLint config_size, EGLint *num_config);
-EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list);
-EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, void *win, const EGLint *attrib_list);
-EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
+
+EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config,
+                              EGLint attribute, EGLint *value);
+
+EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute,
+                           EGLint *value);
+
+EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface,
+                           EGLint attribute, EGLint *value);
+
+EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint * attrib_list,
+                           EGLConfig * configs, EGLint config_size,
+                           EGLint * num_config);
+
+EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config,
+                            EGLContext share_context,
+                            const EGLint * attrib_list);
+
+EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, void * win,
+                                  const EGLint * attrib_list);
+
+EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read,
+                          EGLContext ctx);
+
 EGLBoolean eglDestroyContext(EGLDisplay dpy, EGLContext ctx);
+
 EGLBoolean eglDestroySurface(EGLDisplay dpy, EGLSurface surface);
+
 EGLBoolean eglTerminate(EGLDisplay dpy);
+
 EGLContext eglGetCurrentContext (void);
-EGLBoolean eglGetConfigs(EGLDisplay display, EGLConfig * configs, EGLint config_size, EGLint * num_config);
+
+EGLBoolean eglGetConfigs(EGLDisplay display, EGLConfig * configs,
+                         EGLint config_size, EGLint * num_config);
+
 char const * eglQueryString(EGLDisplay display, EGLint name);
 
 #define EGL_CONFIG_ID                     0x3028

@@ -1,8 +1,4 @@
 /*
- * utils/dialog.c
- *
- * Common dialog for error messages and cheats input.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      fgsfds
  * Copyright (C) 2022-2023 Volodymyr Atamanenko

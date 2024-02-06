@@ -1,11 +1,7 @@
 /*
- * reimpl/io.c
- *
- * Wrappers and implementations for some of the IO functions.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2022      Rinnegatamante
- * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
@@ -18,6 +14,7 @@
 #include <sys/unistd.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <stdarg.h>
 #include <psp2/kernel/threadmgr.h>
 
 #ifdef USE_SCELIBC_IO
@@ -28,116 +25,148 @@
 #include "utils/utils.h"
 
 // Includes the following inline utilities:
-// int oflags_newlib_to_oflags_musl(int flags);
-// dirent64_bionic * dirent_newlib_to_dirent_bionic(struct dirent* dirent_newlib);
-// void stat_newlib_to_stat_bionic(struct stat * src, stat64_bionic * dst);
-#include "_struct_converters.c"
+// int oflags_musl_to_newlib(int flags);
+// dirent64_bionic * dirent_newlib_to_bionic(struct dirent* dirent_newlib);
+// void stat_newlib_to_bionic(struct stat * src, stat64_bionic * dst);
+#include "reimpl/bits/_struct_converters.c"
 
-FILE *fopen_soloader(char *fname, char *mode) {
-    if (strcmp(fname, "/proc/cpuinfo") == 0) {
+FILE * fopen_soloader(const char * filename, const char * mode) {
+    if (strcmp(filename, "/proc/cpuinfo") == 0) {
         return fopen_soloader("app0:/cpuinfo", mode);
-    } else if (strcmp(fname, "/proc/meminfo") == 0) {
+    } else if (strcmp(filename, "/proc/meminfo") == 0) {
         return fopen_soloader("app0:/meminfo", mode);
     }
 
-    #ifdef USE_SCELIBC_IO
-        FILE* ret = sceLibcBridge_fopen(fname, mode);
-    #else
-        FILE* ret = fopen(fname, mode);
-    #endif
+#ifdef USE_SCELIBC_IO
+    FILE* ret = sceLibcBridge_fopen(filename, mode);
+#else
+    FILE* ret = fopen(filename, mode);
+#endif
 
-    logv_debug("[io] fopen(%s, %s): 0x%x", fname, mode, ret);
+    if (ret)
+        l_debug("fopen(%s, %s): %p", filename, mode, ret);
+    else
+        l_warn("fopen(%s, %s): %p", filename, mode, ret);
 
     return ret;
 }
 
-int open_soloader(char *_fname, int flags) {
-    if (strcmp(_fname, "/proc/cpuinfo") == 0) {
-        return open_soloader("app0:/cpuinfo", flags);
-    } else if (strcmp(_fname, "/proc/meminfo") == 0) {
-        return open_soloader("app0:/meminfo", flags);
+int open_soloader(const char * path, int oflag, ...) {
+    if (strcmp(path, "/proc/cpuinfo") == 0) {
+        return open_soloader("app0:/cpuinfo", oflag);
+    } else if (strcmp(path, "/proc/meminfo") == 0) {
+        return open_soloader("app0:/meminfo", oflag);
     }
 
-    flags = oflags_newlib_to_oflags_musl(flags);
-    int ret = open(_fname, flags);
-    logv_debug("[io] open(%s, %x): %i", _fname, flags, ret);
+    mode_t mode = 0;
+    if (((oflag & BIONIC_O_CREAT) == BIONIC_O_CREAT) ||
+        ((oflag & BIONIC_O_TMPFILE) == BIONIC_O_TMPFILE)) {
+        va_list args;
+        va_start(args, oflag);
+        mode = (mode_t)(va_arg(args, int));
+        va_end(args);
+    }
+
+    oflag = oflags_musl_to_newlib(oflag);
+    int ret = open(path, oflag, mode);
+    if (ret)
+        l_debug("open(%s, %x): %i", path, oflag, ret);
+    else
+        l_warn("open(%s, %x): %i", path, oflag, ret);
     return ret;
 }
 
-int fstat_soloader(int fd, void *statbuf) {
+int fstat_soloader(int fd, stat64_bionic * buf) {
     struct stat st;
     int res = fstat(fd, &st);
-    if (res == 0)
-        stat_newlib_to_stat_bionic(&st, statbuf);
 
-    logv_debug("[io] fstat(fd#%i): %i", fd, res);
+    if (res == 0)
+        stat_newlib_to_bionic(&st, buf);
+
+    l_debug("fstat(%i): %i", fd, res);
     return res;
 }
 
-int stat_soloader(char *_pathname, stat64_bionic *statbuf) {
+int stat_soloader(const char * path, stat64_bionic * buf) {
     struct stat st;
-    int res = stat(_pathname, &st);
+    int res = stat(path, &st);
 
     if (res == 0)
-        stat_newlib_to_stat_bionic(&st, statbuf);
+        stat_newlib_to_bionic(&st, buf);
 
-    logv_debug("[io] stat(%s): %i", _pathname, res);
+    l_debug("stat(%s): %i", path, res);
     return res;
 }
 
 int fclose_soloader(FILE * f) {
-    #ifdef USE_SCELIBC_IO
-        int ret = sceLibcBridge_fclose(f);
-    #else
-        int ret = fclose(f);
-    #endif
+#ifdef USE_SCELIBC_IO
+    int ret = sceLibcBridge_fclose(f);
+#else
+    int ret = fclose(f);
+#endif
 
-    logv_debug("[io] fclose(0x%x): %i", f, ret);
+    l_debug("fclose(%p): %i", f, ret);
     return ret;
 }
 
 int close_soloader(int fd) {
     int ret = close(fd);
-    logv_debug("[io] close(fd#%i): %i", fd, ret);
+    l_debug("close(%i): %i", fd, ret);
     return ret;
 }
 
 DIR* opendir_soloader(char* _pathname) {
     DIR* ret = opendir(_pathname);
-    logv_debug("[io] opendir(\"%s\"): 0x%x", _pathname, ret);
+    l_debug("opendir(\"%s\"): %p", _pathname, ret);
     return ret;
 }
 
-struct dirent * readdir_soloader(DIR * dir) {
+struct dirent64_bionic * readdir_soloader(DIR * dir) {
+    static struct dirent64_bionic dirent_tmp;
+
     struct dirent* ret = readdir(dir);
-    log_debug("[io] readdir()");
-    return ret;
+    l_debug("readdir(%p): %p", dir, ret);
+
+    if (ret) {
+        dirent64_bionic* entry_tmp = dirent_newlib_to_bionic(ret);
+        memcpy(&dirent_tmp, entry_tmp, sizeof(dirent64_bionic));
+        free(entry_tmp);
+        return &dirent_tmp;
+    }
+
+    return NULL;
 }
 
-int readdir_r_soloader(DIR *dirp, dirent64_bionic *entry, dirent64_bionic **result) {
+int readdir_r_soloader(DIR * dirp, dirent64_bionic * entry,
+                       dirent64_bionic ** result) {
     struct dirent dirent_tmp;
-    struct dirent* pdirent_tmp;
+    struct dirent * pdirent_tmp;
 
     int ret = readdir_r(dirp, &dirent_tmp, &pdirent_tmp);
 
     if (ret == 0) {
-        dirent64_bionic* entry_tmp = dirent_newlib_to_dirent_bionic(&dirent_tmp);
+        dirent64_bionic* entry_tmp = dirent_newlib_to_bionic(&dirent_tmp);
         memcpy(entry, entry_tmp, sizeof(dirent64_bionic));
         *result = (pdirent_tmp != NULL) ? entry : NULL;
         free(entry_tmp);
     }
 
-    log_debug("[io] readdir_r()");
+    l_debug("readdir_r(%p, %p, %p): %i", dirp, entry, result, ret);
     return ret;
 }
 
-int closedir_soloader(DIR* dir) {
+int closedir_soloader(DIR * dir) {
     int ret = closedir(dir);
-    logv_debug("[io] closedir(0x%x): %i", dir, ret);
+    l_debug("closedir(%p): %i", dir, ret);
     return ret;
 }
 
 int fcntl_soloader(int fd, int cmd, ...) {
-    logv_debug("[io] fcntl(fd#%i, cmd#%i)", fd, cmd);
+    l_warn("fcntl(%i, %i, ...): not implemented", fd, cmd);
+    return 0;
+}
+
+int ioctl_soloader(int fd, int request, ...) {
+    l_warn("ioctl(%i, %i, ...): not implemented", fd, request);
     return 0;
 }

@@ -1,8 +1,4 @@
 /*
- * reimpl/log.h
- *
- * Implementations for different Android logging functions.
- * 
  * Copyright (C) 2009      The Android Open Source Project
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2022      Rinnegatamante
@@ -10,6 +6,11 @@
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
+ */
+
+/**
+ * @file  log.h
+ * @brief Implementations for different Android logging functions.
  */
 
 #ifndef SOLOADER_LOG_H

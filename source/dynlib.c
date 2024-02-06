@@ -1,38 +1,29 @@
 /*
- * dynlib.c
- *
- * Resolving dynamic imports of the .so.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      Rinnegatamante
- * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
  */
 
-// Disable IDE complaints about _identifiers and global interfaces
-#pragma ide diagnostic ignored "bugprone-reserved-identifier"
-#pragma ide diagnostic ignored "cppcoreguidelines-interfaces-global-init"
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-
-// Suppress `mktemp` deprecation warning
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-#include "dynlib.h"
+/**
+ * @file  dynlib.c
+ * @brief Resolving dynamic imports of the .so.
+ */
 
 #include <psp2/kernel/clib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <malloc.h>
 #include <math.h>
 #include <netdb.h>
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <zlib.h>
-#include <dirent.h>
 #include <locale.h>
 #include <poll.h>
 
@@ -40,7 +31,6 @@
 #include <sys/unistd.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <sys/param.h>
 
 #include <so_util/so_util.h>
 
@@ -52,14 +42,13 @@
 #include <libc_bridge/libc_bridge.h>
 #endif
 
-#include "reimpl/env.h"
 #include "reimpl/errno.h"
 #include "reimpl/io.h"
-#include "reimpl/ioctl.h"
 #include "reimpl/log.h"
 #include "reimpl/mem.h"
 #include "reimpl/pthr.h"
 #include "reimpl/sys.h"
+#include "reimpl/egl.h"
 
 extern void * _ZNSt9exceptionD2Ev;
 extern void * _ZSt17__throw_bad_allocv;
@@ -119,7 +108,6 @@ extern void *__cxa_pure_virtual;
 extern void *__gnu_ldivmod_helper;
 extern void *__gnu_unwind_frame;
 extern void *__srget;
-extern void *__stack_chk_fail;
 extern void *__stack_chk_guard;
 extern void *__swbuf;
 
@@ -129,40 +117,13 @@ extern const short *BIONIC_toupper_tab_;
 
 static FILE __sF_fake[3];
 
-int __atomic_dec(volatile int *ptr) {
-    return __sync_fetch_and_sub (ptr, 1);
-}
-
-int __atomic_inc(volatile int *ptr) {
-    return __sync_fetch_and_add (ptr, 1);
-}
-
-int __system_property_get(const char* name, char* value) {
-    logv_error("__system_property_get(name: \"%s\")", name);
-    return 0;
-}
-
-int sigaction(int signal, const struct sigaction* bionic_new_action, struct sigaction* bionic_old_action) {
-    logv_error("sigaction: %i", signal);
-    return 0;
-}
-
-void *dlsym_fake(void *restrict handle, const char *restrict symbol) {
+void *dlsym_soloader(void * handle, const char * symbol) {
     // Usage example:
     // if (strcmp("AMotionEvent_getAxisValue", symbol) == 0)
     //    return &AMotionEvent_getAxisValue;
-    
-    logv_error("Symbol %s not found", symbol);
+
+    l_error("dlsym: Unknown symbol \"%s\".", symbol);
     return NULL;
-}
-
-void stack_chk_fail() {
-    sceClibPrintf("[!!!] Stack has collapsed at %p\n", __builtin_return_address(0));
-}
-
-void abort_wrap() {
-   sceClibPrintf("Abort called from %p\n", __builtin_return_address(0));
-   abort();
 }
 
 so_default_dynlib default_dynlib[] = {
@@ -236,10 +197,10 @@ so_default_dynlib default_dynlib[] = {
         { "__gxx_personality_v0", (uintptr_t)&__gxx_personality_v0 },
         { "__sF", (uintptr_t)&__sF_fake },
         { "__srget", (uintptr_t)&__srget },
-        { "__stack_chk_fail", (uintptr_t)&stack_chk_fail },
+        { "__stack_chk_fail", (uintptr_t)&__stack_chk_fail_soloader },
         { "__stack_chk_guard", (uintptr_t)&__stack_chk_guard },
         { "__swbuf", (uintptr_t)&__swbuf },
-        { "__system_property_get", (uintptr_t)&__system_property_get },
+        { "__system_property_get", (uintptr_t)&__system_property_get_soloader },
 
 
         // ctype
@@ -493,12 +454,15 @@ so_default_dynlib default_dynlib[] = {
         { "eglDestroyContext", (uintptr_t)&eglDestroyContext },
         { "eglDestroySurface", (uintptr_t)&eglDestroySurface },
         { "eglGetConfigAttrib", (uintptr_t)&eglGetConfigAttrib },
+        { "eglGetConfigs", (uintptr_t)&eglGetConfigs },
+        { "eglGetCurrentContext", (uintptr_t)&eglGetCurrentContext },
         { "eglGetDisplay", (uintptr_t)&eglGetDisplay },
         { "eglGetError", (uintptr_t)&eglGetError },
         { "eglGetProcAddress", (uintptr_t)&eglGetProcAddress },
         { "eglInitialize", (uintptr_t)&eglInitialize },
         { "eglMakeCurrent", (uintptr_t)&eglMakeCurrent },
         { "eglQueryContext", (uintptr_t)&eglQueryContext },
+        { "eglQueryString", (uintptr_t)&eglQueryString },
         { "eglQuerySurface", (uintptr_t)&eglQuerySurface },
         { "eglSwapBuffers", (uintptr_t)&eglSwapBuffers },
         { "eglTerminate", (uintptr_t)&eglTerminate },
@@ -536,11 +500,7 @@ so_default_dynlib default_dynlib[] = {
         { "glColor4x", (uintptr_t)&glColor4x },
         { "glColorMask", (uintptr_t)&glColorMask },
         { "glColorPointer", (uintptr_t)&glColorPointer },
-#ifdef USE_CG_SHADERS
-        { "glCompileShader", (uintptr_t)&glCompileShaderHook },
-#else
-        { "glCompileShader", (uintptr_t)&glCompileShader },
-#endif
+        { "glCompileShader", (uintptr_t)&glCompileShader_soloader },
         { "glCompressedTexImage2D", (uintptr_t)&glCompressedTexImage2D },
         { "glCompressedTexSubImage2D", (uintptr_t)&ret0 },
         { "glCopyTexImage2D", (uintptr_t)&glCopyTexImage2D },
@@ -611,7 +571,7 @@ so_default_dynlib default_dynlib[] = {
         { "glMatrixMode", (uintptr_t)&glMatrixMode },
         { "glMultMatrixf", (uintptr_t)&glMultMatrixf },
         { "glNormalPointer", (uintptr_t)&glNormalPointer },
-        { "glPixelStorei", (uintptr_t)&ret0 },
+        { "glPixelStorei", (uintptr_t)&glPixelStorei },
         { "glPolygonOffset", (uintptr_t)&glPolygonOffset },
         { "glPopMatrix", (uintptr_t)&glPopMatrix },
         { "glPushMatrix", (uintptr_t)&glPushMatrix },
@@ -623,11 +583,7 @@ so_default_dynlib default_dynlib[] = {
         { "glScalef", (uintptr_t)&glScalef },
         { "glScissor", (uintptr_t)&glScissor },
         { "glShadeModel", (uintptr_t)&glShadeModel },
-#ifdef USE_CG_SHADERS
-        { "glShaderSource", (uintptr_t)&glShaderSourceHook },
-#else
-        { "glShaderSource", (uintptr_t)&glShaderSource },
-#endif
+        { "glShaderSource", (uintptr_t)&glShaderSource_soloader },
         { "glStencilFunc", (uintptr_t)&glStencilFunc },
         { "glStencilFuncSeparate", (uintptr_t)&glStencilFuncSeparate },
         { "glStencilMask", (uintptr_t)&glStencilMask },
@@ -761,7 +717,7 @@ so_default_dynlib default_dynlib[] = {
         { "dlclose", (uintptr_t)&ret0 },
         { "dlerror", (uintptr_t)&ret0 },
         { "dlopen", (uintptr_t)&ret1 },
-        { "dlsym", (uintptr_t)&dlsym_fake },
+        { "dlsym", (uintptr_t)&dlsym_soloader },
 
 
         // Errno
@@ -805,9 +761,9 @@ so_default_dynlib default_dynlib[] = {
 
 
         // Time
-        { "clock", (uintptr_t)&clock },
-        { "clock_getres", (uintptr_t)&clock_getres },
-        { "clock_gettime", (uintptr_t)&clock_gettime },
+        { "clock", (uintptr_t)&clock_soloader },
+        { "clock_getres", (uintptr_t)&clock_getres_soloader },
+        { "clock_gettime", (uintptr_t)&clock_gettime_soloader },
         { "difftime", (uintptr_t)&difftime },
         { "gettimeofday", (uintptr_t)&gettimeofday },
         { "gmtime", (uintptr_t)&gmtime },
@@ -829,12 +785,12 @@ so_default_dynlib default_dynlib[] = {
 
 
         // stdlib
-        { "abort", (uintptr_t)&abort_wrap },
+        { "abort", (uintptr_t)&abort_soloader },
         { "atof", (uintptr_t)&atof },
         { "atoi", (uintptr_t)&atoi },
         { "atol", (uintptr_t)&atol },
         { "atoll", (uintptr_t)&atoll },
-        { "exit", (uintptr_t)&exit },
+        { "exit", (uintptr_t)&exit_soloader },
         { "lrand48", (uintptr_t)&lrand48 },
         { "prctl", (uintptr_t)&ret0 },
         { "sleep", (uintptr_t)&sleep },

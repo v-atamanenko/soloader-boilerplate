@@ -1,8 +1,4 @@
 /*
- * utils/glutil.c
- *
- * OpenGL API initializer, related functions.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko

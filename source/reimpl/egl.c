@@ -1,10 +1,20 @@
+/*
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license. See the LICENSE file for details.
+ */
+
 #include "reimpl/egl.h"
 
 #include "utils/glutil.h"
 #include "utils/logger.h"
 
+#include <string.h>
+#include <stdlib.h>
+
 EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor) {
-    logv_debug("eglInitialize(0x%x)", (int)dpy);
+    l_debug("eglInitialize(0x%x)", (int)dpy);
 
     gl_init();
 
@@ -31,7 +41,7 @@ EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute,
             *value = EGL_BACK_BUFFER;
             break;
         default:
-            logv_error("eglQueryContext %x  EGL_BAD_ATTRIBUTE", attribute);
+            l_error("eglQueryContext / EGL_BAD_ATTRIBUTE: 0x%x", attribute);
             ret = EGL_FALSE;
             break;
     }
@@ -96,7 +106,8 @@ EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface,
             *value = EGL_FALSE;
             break;
         default:
-            logv_error("eglQuerySurface %x  EGL_BAD_ATTRIBUTE", attribute);
+            l_error("eglQuerySurface / EGL_BAD_ATTRIBUTE: 0x%x", attribute);
+            ret = EGL_FALSE;
             break;
     }
 
@@ -200,7 +211,7 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config,
             break;
         }
         case EGL_RENDERABLE_TYPE: {
-            *value = 0 | EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT | EGL_OPENGL_BIT;
+            *value = EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT | EGL_OPENGL_BIT;
             break;
         }
         case EGL_SAMPLE_BUFFERS: {
@@ -236,6 +247,7 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config,
             break;
         }
         default:
+            l_error("eglGetConfigAttrib / EGL_BAD_ATTRIBUTE: 0x%x", attribute);
             return EGL_FALSE;
     }
     return EGL_TRUE;
@@ -253,7 +265,7 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list,
         return EGL_TRUE;
     }
 
-    *configs = strdup("1");
+    *configs = strdup("conf");
     *num_config = 1;
 
     return EGL_TRUE;
@@ -292,7 +304,7 @@ EGLBoolean eglTerminate(EGLDisplay dpy) {
 }
 
 EGLContext eglGetCurrentContext (void) {
-    return strdup("1");
+    return strdup("ctx");
 }
 
 char const * eglQueryString(EGLDisplay display, EGLint name) {
@@ -318,9 +330,10 @@ char const * eglQueryString(EGLDisplay display, EGLint name) {
     }
 }
 
-EGLBoolean eglGetConfigs(EGLDisplay display, EGLConfig * configs, EGLint config_size, EGLint * num_config) {
+EGLBoolean eglGetConfigs(EGLDisplay display, EGLConfig * configs,
+                         EGLint config_size, EGLint * num_config) {
     if (!num_config) {
-        log_error("eglGetConfigs: EGL_BAD_PARAMETER");
+        l_error("eglGetConfigs / EGL_BAD_PARAMETER");
         return EGL_FALSE;
     }
 
