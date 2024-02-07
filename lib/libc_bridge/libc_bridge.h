@@ -44,6 +44,7 @@ char *sceLibcBridge_fgets(char * s, int n, FILE * stream);
 int sceLibcBridge_fputs(const char *s, FILE * stream);
 int sceLibcBridge_fscanf(FILE * stream, const char * format, ...);
 int sceLibcBridge_fsetpos(FILE *stream, const fpos_t *pos);
+int sceLibcBridge_fwide(FILE *stream, int mode);
 
 int sceLibcBridge_ungetc(int c, FILE *stream);
 int sceLibcBridge_getc(FILE *stream);

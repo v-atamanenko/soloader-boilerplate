@@ -89,6 +89,15 @@ bool file_mkpath(const char * path, mode_t mode);
 bool file_save(const char * path, const uint8_t * buffer, size_t size);
 
 /**
+ * Get the size of a file in bytes
+ *
+ * @param[in] path Full path of the target file.
+ *
+ * @return File size in bytes or (size_t)-1 in case of a failure.
+ */
+size_t file_size(const char * path);
+
+/**
  * Get SHA1 hash of file contents.
  *
  * @param[in] path Full path of the source file.

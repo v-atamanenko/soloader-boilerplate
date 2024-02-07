@@ -27,13 +27,13 @@
 #define BIONIC_O_TMPFILE   (BIONIC__O_TMPFILE | BIONIC_O_DIRECTORY)
 
 /**
- * Convert musl (Android) open() flags to newlib (Vita) flags
+ * Convert bionic (Android) `open()` flags to newlib (Vita) flags
  *
  * @param[in] flags open() flags created using musl defines
  *
  * @return open(flags) recreated using newlib defines
  */
-SC_INLINE int oflags_musl_to_newlib(int flags) {
+SC_INLINE int oflags_bionic_to_newlib(int flags) {
     int out = 0;
     if (flags & BIONIC_O_RDWR)
         out |= O_RDWR;

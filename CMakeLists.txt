@@ -55,6 +55,8 @@ endif()
 # Unique debug definition for loader's logging to not interfere with anything
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_SOLOADER)
+  # Uncomment this for verbose FalsoJNI logging:
+  #add_definitions(-DFALSOJNI_DEBUGLEVEL=0)
 endif()
 
 # makes sincos, sincosf, etc. visible

@@ -58,7 +58,7 @@ int open_soloader(const char * path, int oflag, ...) {
         return open_soloader("app0:/meminfo", oflag);
     }
 
-    mode_t mode = 0;
+    mode_t mode = 0666;
     if (((oflag & BIONIC_O_CREAT) == BIONIC_O_CREAT) ||
         ((oflag & BIONIC_O_TMPFILE) == BIONIC_O_TMPFILE)) {
         va_list args;
@@ -67,9 +67,9 @@ int open_soloader(const char * path, int oflag, ...) {
         va_end(args);
     }
 
-    oflag = oflags_musl_to_newlib(oflag);
+    oflag = oflags_bionic_to_newlib(oflag);
     int ret = open(path, oflag, mode);
-    if (ret)
+    if (ret >= 0)
         l_debug("open(%s, %x): %i", path, oflag, ret);
     else
         l_warn("open(%s, %x): %i", path, oflag, ret);
@@ -169,4 +169,10 @@ int fcntl_soloader(int fd, int cmd, ...) {
 int ioctl_soloader(int fd, int request, ...) {
     l_warn("ioctl(%i, %i, ...): not implemented", fd, request);
     return 0;
+}
+
+int fsync_soloader(int fd) {
+    int ret = fsync(fd);
+    l_debug("fsync(%i): %i", fd, ret);
+    return ret;
 }

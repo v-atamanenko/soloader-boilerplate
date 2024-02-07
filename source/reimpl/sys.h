@@ -43,6 +43,10 @@ int __atomic_dec(volatile int *ptr);
 
 int __atomic_inc(volatile int *ptr);
 
+int __atomic_swap(int new_value, volatile int *ptr);
+
+int __atomic_cmpxchg(int old_value, int new_value, volatile int* ptr);
+
 char * getenv_soloader(const char * name);
 
 int setenv_soloader(const char * name, const char * value, int overwrite);

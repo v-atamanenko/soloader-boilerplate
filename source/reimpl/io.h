@@ -95,6 +95,8 @@ int fcntl_soloader(int fd, int cmd, ...);
 
 int ioctl_soloader(int fd, int request, ... /* arg */);
 
+int fsync_soloader(int fd);
+
 #ifdef __cplusplus
 };
 #endif

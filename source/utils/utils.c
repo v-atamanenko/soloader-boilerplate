@@ -34,13 +34,14 @@ uint64_t current_timestamp_ms() {
 
 bool file_copy(const char * path, const char * destination) {
     if (!file_exists(path)) {
-        logv_error("Specified source path \"%s\" does not exist.", path);
+        l_error("file_copy: Specified source path \"%s\" "
+                "does not exist.", path);
         return false;
     }
 
     if (!file_mkpath(destination, 0755)) {
-        logv_error("Could not create parent directories for the specified "
-                   "destination path \"%s\".", destination);
+        l_error("file_copy: Could not create parent directories for the "
+                "specified destination path \"%s\".", destination);
         return false;
     }
 
@@ -48,13 +49,14 @@ bool file_copy(const char * path, const char * destination) {
     size_t    size;
 
     if (!file_load(path, &buffer, &size)) {
-        logv_error("Failed to read data from the source path \"%s\".", path);
+        l_error("file_copy: Failed to read data from "
+                "the source path \"%s\".", path);
         return false;
     }
 
     if (!file_save(destination, buffer, size)) {
-        logv_error("Failed to write data to the specified destination "
-                   "path \"%s\".", destination);
+        l_error("file_copy: Failed to write data to the specified "
+                "destination path \"%s\".", destination);
         return false;
     }
 
@@ -69,12 +71,13 @@ bool file_exists(const char * path) {
 
 bool file_load(const char * path, uint8_t ** buffer, size_t * size) {
     if (!buffer || !size) {
-        log_error("Invalid argument(s).");
+        l_error("file_load: Invalid argument(s).");
         return false;
     }
 
     if (!file_exists(path)) {
-        logv_error("Specified source path \"%s\" does not exist.", path);
+        l_error("file_load: Specified source path \"%s\" "
+                "does not exist.", path);
         return false;
     }
 
@@ -85,7 +88,8 @@ bool file_load(const char * path, uint8_t ** buffer, size_t * size) {
 #endif
 
     if (!f) {
-        logv_error("Could not open the specified source path \"%s\".", path);
+        l_error("file_load: Could not open the specified "
+                "source path \"%s\".", path);
         return false;
     }
 
@@ -94,13 +98,13 @@ bool file_load(const char * path, uint8_t ** buffer, size_t * size) {
     *size = sceLibcBridge_ftell(f);
     sceLibcBridge_fseek(f, 0, SEEK_SET);
 #else
-    sceLibcBridge_fseek(f, 0, SEEK_END);
-    *size = sceLibcBridge_ftell(f);
-    sceLibcBridge_fseek(f, 0, SEEK_SET);
+    fseek(f, 0, SEEK_END);
+    *size = ftell(f);
+    fseek(f, 0, SEEK_SET);
 #endif
 
     if (*size <= 0) {
-        logv_error("The specified source file \"%s\" is empty.", path);
+        l_error("file_load: The specified source file \"%s\" is empty.", path);
     #ifdef USE_SCELIBC_IO
         sceLibcBridge_fclose(f);
     #else
@@ -112,8 +116,8 @@ bool file_load(const char * path, uint8_t ** buffer, size_t * size) {
     *buffer = malloc(*size);
 
     if (!*buffer) {
-        logv_error("Unable to allocate %d bytes of memory to load "
-                   "the specified source file \"%s\".", path);
+        l_error("file_load: Unable to allocate %d bytes of memory to load "
+                "the specified source file \"%s\".", path);
     #ifdef USE_SCELIBC_IO
         sceLibcBridge_fclose(f);
     #else
@@ -135,7 +139,7 @@ bool file_load(const char * path, uint8_t ** buffer, size_t * size) {
 
 bool file_mkpath(const char * path, mode_t mode) {
     if (!path || !*path) {
-        log_error("Invalid argument.");
+        l_error("file_mkpath: Invalid argument.");
         return false;
     }
 
@@ -144,8 +148,8 @@ bool file_mkpath(const char * path, mode_t mode) {
         *p = '\0';
         if (mkdir(file_path, mode) == -1) {
             if (errno != EEXIST) {
-                logv_error("Unable to create a directory \"%s\", mkdir "
-                           "error code is %s.", file_path, strerror(errno));
+                l_error("file_mkpath: Unable to create a directory \"%s\", "
+                        "mkdir error code is %s.", file_path, strerror(errno));
                 free(file_path);
                 return false;
             }
@@ -165,7 +169,8 @@ bool file_save(const char * path, const uint8_t * buffer, size_t size) {
 #endif
 
     if (!f) {
-        logv_error("Could not open the specified target path \"%s\".", path);
+        l_error("file_save: Could not open the specified "
+                "target path \"%s\".", path);
         return false;
     }
 
@@ -180,12 +185,49 @@ bool file_save(const char * path, const uint8_t * buffer, size_t size) {
     return true;
 }
 
+size_t file_size(const char * path) {
+    size_t ret = -1;
+
+    if (!file_exists(path)) {
+        l_error("size_t: Specified source path \"%s\" "
+                "does not exist.", path);
+        return ret;
+    }
+
+#ifdef USE_SCELIBC_IO
+    FILE * f = sceLibcBridge_fopen(path, "rb");
+#else
+    FILE * f = fopen(path, "rb");
+#endif
+
+    if (!f) {
+        l_error("size_t: Could not open the specified "
+                "source path \"%s\".", path);
+        return ret;
+    }
+
+#ifdef USE_SCELIBC_IO
+    sceLibcBridge_fseek(f, 0, SEEK_END);
+    ret = sceLibcBridge_ftell(f);
+    sceLibcBridge_fseek(f, 0, SEEK_SET);
+    sceLibcBridge_fclose(f)
+#else
+    fseek(f, 0, SEEK_END);
+    ret = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    fclose(f);
+#endif
+
+    return ret;
+}
+
 char * file_sha1sum(const char * path) {
     uint8_t * buffer;
     size_t    size;
 
     if (!file_load(path, &buffer, &size)) {
-        logv_error("Failed to read data from the source path \"%s\".", path);
+        l_error("file_sha1sum: Failed to read data from "
+                "the source path \"%s\".", path);
         return NULL;
     }
 

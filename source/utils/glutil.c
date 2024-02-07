@@ -50,12 +50,12 @@ void glShaderSource_soloader(GLuint shader, GLsizei count,
     sceClibPrintf("[gl_dbg] glShaderSource<%p>(shader: %i, count: %i, string: %p, length: %p)\n", __builtin_return_address(0), shader, count, string, _length);
 #endif
     if (!string) {
-        logv_error("<%p> Shader source string is NULL, count: %i",
+        l_error("<%p> Shader source string is NULL, count: %i",
                    __builtin_return_address(0), count);
         skip_next_compile = GL_TRUE;
         return;
     } else if (!*string) {
-        logv_error("<%p> Shader source *string is NULL, count: %i",
+        l_error("<%p> Shader source *string is NULL, count: %i",
                    __builtin_return_address(0), count);
         skip_next_compile = GL_TRUE;
         return;
@@ -169,8 +169,8 @@ void load_shader(GLuint shader, const char * string, size_t length) {
         free(buffer);
         skip_next_compile = GL_FALSE;
     } else {
-        logv_warn("Encountered an untranslated shader %s, saving GLSL "
-                  "and using a dummy shader.", sha_name);
+        l_warn("Encountered an untranslated shader %s, saving GLSL "
+               "and using a dummy shader.", sha_name);
 
         char glsl_path[256];
         snprintf(glsl_path, sizeof(glsl_path), DATA_PATH"glsl/%s.glsl", sha_name);
@@ -224,8 +224,8 @@ void load_shader(GLuint shader, const char * string, size_t length) {
         free(buffer);
 #endif
     } else {
-        logv_warn("Encountered an untranslated shader %s, saving GLSL "
-                  "and using a dummy shader.", sha_name);
+        l_warn("Encountered an untranslated shader %s, saving GLSL "
+               "and using a dummy shader.", sha_name);
 
         char glsl_path[256];
         snprintf(glsl_path, sizeof(glsl_path), DATA_PATH"glsl/%s.glsl", sha_name);
