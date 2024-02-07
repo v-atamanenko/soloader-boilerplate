@@ -1,8 +1,4 @@
 /*
- * utils/glutil.c
- *
- * OpenGL API initializer, related functions.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
@@ -23,95 +19,10 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/io/stat.h>
 
-#ifdef USE_CG_SHADERS
-
+// Helpers for our handling of shaders
 GLboolean skip_next_compile = GL_FALSE;
-char next_shader_fname[128];
-
-void load_shader(GLuint shader, const char * string, size_t length) {
-    char* sha_name = get_string_sha1((uint8_t*)string, length);
-
-    char gxp_path[128];
-    snprintf(gxp_path, sizeof(gxp_path), DATA_PATH"gxp/%c%c/%s.gxp", sha_name[0], sha_name[1], sha_name);
-
-    FILE *file = fopen(gxp_path, "rb");
-    if (!file) {
-        mkpath(gxp_path, 0777);
-        glShaderSource(shader, 1, &string, &length);
-        snprintf(next_shader_fname, sizeof(next_shader_fname), DATA_PATH"gxp/%c%c/%s.gxp", sha_name[0], sha_name[1], sha_name);
-    } else {
-        fseek(file, 0, SEEK_END);
-        uint32_t size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-
-        char * shaderBuf = malloc(size + 1);
-        fread(shaderBuf, 1, size, file);
-        shaderBuf[size] = 0;
-        fclose(file);
-
-        glShaderBinary(1, &shader, 0, shaderBuf, (int32_t)size);
-
-        if(shaderBuf) free(shaderBuf);
-        skip_next_compile = GL_TRUE;
-    }
-    free(sha_name);
-}
-
-void glShaderSourceHook(GLuint shader, GLsizei count, const GLchar **string,
-                        const GLint *_length) {
-    if (!string) {
-        log_error("Shader source string is NULL");
-        return;
-    } else if (!*string) {
-        log_error("Shader source *string is NULL");
-        return;
-    }
-
-    unsigned int total_length = 0;
-
-    for (int i = 0; i < count; ++i) {
-        if (!_length) {
-            total_length += strlen(string[i]);
-        } else {
-            total_length += _length[i];
-        }
-    }
-
-    char * str = malloc(total_length+1);
-    {
-        unsigned int l = 0;
-
-        for (int i = 0; i < count; ++i) {
-            if (!_length) {
-                memcpy(str + l, string[i], strlen(string[i]));
-                l += strlen(string[i]);
-            } else {
-                memcpy(str + l, string[i], _length[i]);
-                l += _length[i];
-            }
-        }
-        str[total_length] = '\0';
-
-        load_shader(shader, str, total_length);
-    }
-    free(str);
-}
-
-void glCompileShaderHook(GLuint shader) {
-    if (!skip_next_compile) {
-        glCompileShader(shader);
-        void *bin = vglMalloc(32 * 1024);
-        GLsizei len;
-        vglGetShaderBinary(shader, 32 * 1024, &len, bin);
-        FILE *file = fopen(next_shader_fname, "wb");
-        fwrite(bin, 1, len, file);
-        fclose(file);
-        vglFree(bin);
-    }
-    skip_next_compile = GL_FALSE;
-}
-
-#endif
+char next_shader_fname[256];
+void load_shader(GLuint shader, const char * string, size_t length);
 
 void gl_preload() {
     if (!file_exists("ur0:/data/libshacccg.suprx")
@@ -120,7 +31,7 @@ void gl_preload() {
                     "Google \"ShaRKBR33D\" for quick installation.");
     }
 
-#ifndef USE_CG_SHADERS
+#ifdef USE_GLSL_SHADERS
     vglSetSemanticBindingMode(VGL_MODE_POSTPONED);
 #endif
 }
@@ -133,290 +44,207 @@ void gl_swap() {
     vglSwapBuffers(GL_FALSE);
 }
 
-EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor) {
-    logv_debug("eglInitialize(0x%x)", (int)dpy);
-
-    gl_init();
-
-    if (major) *major = 2;
-    if (minor) *minor = 2;
-
-    return EGL_TRUE;
-}
-
-EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute,
-                           EGLint *value) {
-    EGLBoolean ret = EGL_TRUE;
-    switch (attribute) {
-        case EGL_CONFIG_ID:
-            *value = 0;
-            break;
-        case EGL_CONTEXT_CLIENT_TYPE:
-            *value = EGL_OPENGL_ES_API;
-            break;
-        case EGL_CONTEXT_CLIENT_VERSION:
-            *value = 2;
-            break;
-        case EGL_RENDER_BUFFER:
-            *value = EGL_BACK_BUFFER;
-            break;
-        default:
-            logv_error("eglQueryContext %x  EGL_BAD_ATTRIBUTE", attribute);
-            ret = EGL_FALSE;
-            break;
+void glShaderSource_soloader(GLuint shader, GLsizei count,
+                             const GLchar **string, const GLint *_length) {
+#ifdef DEBUG_OPENGL
+    sceClibPrintf("[gl_dbg] glShaderSource<%p>(shader: %i, count: %i, string: %p, length: %p)\n", __builtin_return_address(0), shader, count, string, _length);
+#endif
+    if (!string) {
+        l_error("<%p> Shader source string is NULL, count: %i",
+                   __builtin_return_address(0), count);
+        skip_next_compile = GL_TRUE;
+        return;
+    } else if (!*string) {
+        l_error("<%p> Shader source *string is NULL, count: %i",
+                   __builtin_return_address(0), count);
+        skip_next_compile = GL_TRUE;
+        return;
     }
 
-    return ret;
-}
+    size_t total_length = 0;
 
-
-EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface,
-                           EGLint attribute, EGLint *value) {
-    EGLBoolean ret = EGL_TRUE;
-    switch (attribute) {
-        case EGL_CONFIG_ID:
-            *value = 0;
-            break;
-        case EGL_WIDTH:
-            *value = 960;
-            break;
-        case EGL_HEIGHT:
-            *value = 544;
-            break;
-        case EGL_TEXTURE_FORMAT:
-            *value =  EGL_TEXTURE_RGBA; // NoTexture = 0, RGB = 1, RGBA = 2
-            break;
-        case EGL_TEXTURE_TARGET:
-            *value = EGL_TEXTURE_2D;
-            break;
-        case EGL_SWAP_BEHAVIOR:
-            *value = EGL_BUFFER_PRESERVED;
-            break;
-        case EGL_LARGEST_PBUFFER:
-        case EGL_MIPMAP_TEXTURE:
-            *value = EGL_FALSE;
-            break;
-        case EGL_MIPMAP_LEVEL:
-            *value = 0;
-            break;
-        case EGL_MULTISAMPLE_RESOLVE:
-            // ignored when creating the surface, return default
-            *value = EGL_MULTISAMPLE_RESOLVE_DEFAULT;
-            break;
-        case EGL_HORIZONTAL_RESOLUTION:
-        case EGL_VERTICAL_RESOLUTION:
-            *value = 220 * EGL_DISPLAY_SCALING; // VITA DPI is 220
-            break;
-        case EGL_PIXEL_ASPECT_RATIO:
-            // Please don't ask why * EGL_DISPLAY_SCALING, the document says it
-            *value = 960 / 544 * EGL_DISPLAY_SCALING;
-            break;
-        case EGL_RENDER_BUFFER:
-            *value = EGL_BACK_BUFFER;
-            break;
-        case EGL_VG_COLORSPACE:
-            // ignored when creating the surface, return default
-            *value = EGL_VG_COLORSPACE_sRGB;
-            break;
-        case EGL_VG_ALPHA_FORMAT:
-            // ignored when creating the surface, return default
-            *value = EGL_VG_ALPHA_FORMAT_NONPRE;
-            break;
-        case EGL_TIMESTAMPS_ANDROID:
-            *value = EGL_FALSE;
-            break;
-        default:
-            logv_error("eglQuerySurface %x  EGL_BAD_ATTRIBUTE", attribute);
-            break;
+    for (int i = 0; i < count; ++i) {
+        if (!_length) {
+            total_length += strlen(string[i]);
+        } else {
+            total_length += _length[i];
+        }
     }
 
-    return ret;
-}
+    char * str = malloc(total_length+1);
+    size_t l = 0;
 
-
-EGLBoolean eglGetConfigAttrib(EGLDisplay display, EGLConfig config,
-                              EGLint attribute, EGLint * value) {
-    switch (attribute) {
-        case EGL_ALPHA_SIZE: {
-            *value = 8;
-            break;
+    for (int i = 0; i < count; ++i) {
+        if (!_length) {
+            memcpy(str + l, string[i], strlen(string[i]));
+            l += strlen(string[i]);
+        } else {
+            memcpy(str + l, string[i], _length[i]);
+            l += _length[i];
         }
-        case EGL_ALPHA_MASK_SIZE: {
-            *value = 8;
-            break;
-        }
-        case EGL_BIND_TO_TEXTURE_RGB: {
-            *value = EGL_TRUE;
-            break;
-        }
-        case EGL_BIND_TO_TEXTURE_RGBA: {
-            *value = EGL_TRUE;
-            break;
-        }
-        case EGL_BLUE_SIZE: {
-            *value = 8;
-            break;
-        }
-        case EGL_BUFFER_SIZE: {
-            *value = 32;
-            break;
-        }
-        case EGL_COLOR_BUFFER_TYPE: {
-            *value = EGL_RGB_BUFFER;
-            break;
-        }
-        case EGL_CONFIG_CAVEAT: {
-            *value = EGL_NONE;
-            break;
-        }
-        case EGL_CONFIG_ID: {
-            *value = 0;
-            break;
-        }
-        case EGL_CONFORMANT: {
-            *value = 0;
-            break;
-        }
-        case EGL_DEPTH_SIZE: {
-            *value = 24;
-            break;
-        }
-        case EGL_GREEN_SIZE: {
-            *value = 8;
-            break;
-        }
-        case EGL_LEVEL: {
-            *value = 0;
-            break;
-        }
-        case EGL_LUMINANCE_SIZE: {
-            *value = 0;
-            break;
-        }
-        case EGL_MAX_PBUFFER_WIDTH: {
-            *value = 0;
-            break;
-        }
-        case EGL_MAX_PBUFFER_HEIGHT: {
-            *value = 0;
-            break;
-        }
-        case EGL_MAX_PBUFFER_PIXELS: {
-            *value = 0;
-            break;
-        }
-        case EGL_MAX_SWAP_INTERVAL: {
-            *value = 0;
-            break;
-        }
-        case EGL_MIN_SWAP_INTERVAL: {
-            *value = 0;
-            break;
-        }
-        case EGL_NATIVE_RENDERABLE: {
-            *value = 0;
-            break;
-        }
-        case EGL_NATIVE_VISUAL_ID: {
-            *value = 0;
-            break;
-        }
-        case EGL_NATIVE_VISUAL_TYPE: {
-            *value = 0;
-            break;
-        }
-        case EGL_RED_SIZE: {
-            *value = 8;
-            break;
-        }
-        case EGL_RENDERABLE_TYPE: {
-            *value = 0 | EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT | EGL_OPENGL_BIT;
-            break;
-        }
-        case EGL_SAMPLE_BUFFERS: {
-            *value = 0;
-            break;
-        }
-        case EGL_SAMPLES: {
-            *value = 0;
-            break;
-        }
-        case EGL_STENCIL_SIZE: {
-            *value = 8;
-            break;
-        }
-        case EGL_SURFACE_TYPE: {
-            *value = 0 | EGL_WINDOW_BIT;
-            break;
-        }
-        case EGL_TRANSPARENT_TYPE: {
-            *value = 0;
-            break;
-        }
-        case EGL_TRANSPARENT_RED_VALUE: {
-            *value = 0;
-            break;
-        }
-        case EGL_TRANSPARENT_GREEN_VALUE: {
-            *value = 0;
-            break;
-        }
-        case EGL_TRANSPARENT_BLUE_VALUE: {
-            *value = 0;
-            break;
-        }
-        default:
-            return EGL_FALSE;
     }
-    return EGL_TRUE;
+    str[total_length] = '\0';
+
+    load_shader(shader, str, total_length);
+
+    free(str);
 }
 
-EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list,
-                           EGLConfig *configs, EGLint config_size,
-                           EGLint *num_config) {
-    if (!num_config) {
-        return EGL_BAD_PARAMETER;
+void glCompileShader_soloader(GLuint shader) {
+#ifdef DEBUG_OPENGL
+    sceClibPrintf("[gl_dbg] glCompileShader<%p>(shader: %i)\n", __builtin_return_address(0), shader);
+#endif
+
+#ifndef USE_GXP_SHADERS
+    if (!skip_next_compile) {
+        glCompileShader(shader);
+#ifdef DUMP_COMPILED_SHADERS
+        void *bin = vglMalloc(32 * 1024);
+        GLsizei len;
+        vglGetShaderBinary(shader, 32 * 1024, &len, bin);
+        file_save(next_shader_fname, bin, len);
+        vglFree(bin);
+#endif
+    }
+    skip_next_compile = GL_FALSE;
+#endif
+}
+
+#if defined(USE_GLSL_SHADERS) && defined(DUMP_COMPILED_SHADERS)
+void load_shader(GLuint shader, const char * string, size_t length) {
+    char* sha_name = str_sha1sum(string, length);
+
+    char gxp_path[256];
+    snprintf(gxp_path, sizeof(gxp_path), DATA_PATH"gxp/%s.gxp", sha_name);
+
+    if (file_exists(gxp_path)) {
+        uint8_t *buffer;
+        size_t size;
+
+        file_load(gxp_path, &buffer, &size);
+
+        glShaderBinary(1, &shader, 0, buffer, (int32_t) size);
+
+        free(buffer);
+        skip_next_compile = GL_TRUE;
+    } else {
+        glShaderSource(shader, 1, &string, &length);
+        strcpy(next_shader_fname, gxp_path);
     }
 
-    if (!configs) {
-        *num_config = 1;
-        return EGL_TRUE;
+    free(sha_name);
+}
+#elif defined(USE_GLSL_SHADERS)
+void load_shader(GLuint shader, const char * string, size_t length) {
+    glShaderSource(shader, 1, &string, &length);
+}
+#elif defined(USE_CG_SHADERS) && defined(DUMP_COMPILED_SHADERS)
+void load_shader(GLuint shader, const char * string, size_t length) {
+    char* sha_name = str_sha1sum(string, length);
+
+    char gxp_path[256];
+    char cg_path[256];
+    snprintf(gxp_path, sizeof(gxp_path), DATA_PATH"gxp/%s.gxp", sha_name);
+    snprintf(cg_path, sizeof(cg_path), DATA_PATH"cg/%s.cg", sha_name);
+
+    if (file_exists(gxp_path)) {
+        uint8_t *buffer;
+        size_t size;
+
+        file_load(gxp_path, &buffer, &size);
+
+        glShaderBinary(1, &shader, 0, buffer, (int32_t) size);
+
+        free(buffer);
+        skip_next_compile = GL_TRUE;
+    } else if (file_exists(cg_path)) {
+        char *buffer;
+        size_t size;
+
+        file_load(cg_path, (uint8_t **) &buffer, &size);
+
+        glShaderSource(shader, 1, &string, &size);
+        strcpy(next_shader_fname, gxp_path);
+
+        free(buffer);
+        skip_next_compile = GL_FALSE;
+    } else {
+        l_warn("Encountered an untranslated shader %s, saving GLSL "
+               "and using a dummy shader.", sha_name);
+
+        char glsl_path[256];
+        snprintf(glsl_path, sizeof(glsl_path), DATA_PATH"glsl/%s.glsl", sha_name);
+        file_mkpath(glsl_path, 0777);
+        file_save(glsl_path, (const uint8_t *) string, length);
+
+        if (strstr(string, "gl_FragColor")) {
+            const char *dummy_shader = "float4 main() { return float4(1.0,1.0,1.0,1.0); }";
+            int32_t dummy_shader_len = (int32_t) strlen(dummy_shader);
+            glShaderSource(shader, 1, &dummy_shader, &dummy_shader_len);
+        } else {
+            const char *dummy_shader = "void main(float4 out gl_Position : POSITION ) { gl_Position = float4(1.0,1.0,1.0,1.0); }";
+            int32_t dummy_shader_len = (int32_t) strlen(dummy_shader);
+            glShaderSource(shader, 1, &dummy_shader, &dummy_shader_len);
+        }
+
+        skip_next_compile = GL_FALSE;
     }
 
-    *configs = strdup("1");
-    *num_config = 1;
-
-    return EGL_TRUE;
+    free(sha_name);
 }
+#elif defined(USE_CG_SHADERS) || defined(USE_GXP_SHADERS)
+void load_shader(GLuint shader, const char * string, size_t length) {
+    char* sha_name = str_sha1sum(string, length);
 
-EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config,
-                            EGLContext share_context,
-                            const EGLint *attrib_list) {
-    // Just something that is a valid pointer which can be freed later
-    return strdup("ctx");
-}
+    char path[256];
+#ifdef USE_CG_SHADERS
+    snprintf(path, sizeof(path), DATA_PATH"cg/%s.cg", sha_name);
+#else
+    snprintf(path, sizeof(path), DATA_PATH"gxp/%s.gxp", sha_name);
+#endif
 
-EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config,
-                                  void * win, const EGLint *attrib_list) {
-    // Just something that is a valid pointer which can be freed later
-    return strdup("surface");
-}
+    if (file_exists(path)) {
+#ifdef USE_CG_SHADERS
+        char *buffer;
+        size_t size;
 
-EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read,
-                          EGLContext ctx) {
-    return EGL_TRUE;
-}
+        file_load(path, (uint8_t **) &buffer, &size);
 
-EGLBoolean eglDestroyContext (EGLDisplay dpy, EGLContext ctx) {
-    if (ctx) free(ctx);
-    return EGL_TRUE;
-}
+        glShaderSource(shader, 1, &string, &size);
 
-EGLBoolean eglDestroySurface (EGLDisplay dpy, EGLSurface surface) {
-    if (surface) free(surface);
-    return EGL_TRUE;
-}
+        free(buffer);
+#else
+        uint8_t *buffer;
+        size_t size;
 
-EGLBoolean eglTerminate(EGLDisplay dpy) {
-    return EGL_TRUE;
+        file_load(path, &buffer, &size);
+
+        glShaderBinary(1, &shader, 0, buffer, (int32_t) size);
+
+        free(buffer);
+#endif
+    } else {
+        l_warn("Encountered an untranslated shader %s, saving GLSL "
+               "and using a dummy shader.", sha_name);
+
+        char glsl_path[256];
+        snprintf(glsl_path, sizeof(glsl_path), DATA_PATH"glsl/%s.glsl", sha_name);
+        file_mkpath(glsl_path, 0777);
+        file_save(glsl_path, (const uint8_t *) string, length);
+
+        if (strstr(string, "gl_FragColor")) {
+            const char *dummy_shader = "float4 main() { return float4(1.0,1.0,1.0,1.0); }";
+            int32_t dummy_shader_len = (int32_t) strlen(dummy_shader);
+            glShaderSource(shader, 1, &dummy_shader, &dummy_shader_len);
+        } else {
+            const char *dummy_shader = "void main(float4 out gl_Position : POSITION ) { gl_Position = float4(1.0,1.0,1.0,1.0); }";
+            int32_t dummy_shader_len = (int32_t) strlen(dummy_shader);
+            glShaderSource(shader, 1, &dummy_shader, &dummy_shader_len);
+        }
+    }
+
+    free(sha_name);
 }
+#else
+#error "Define one of (USE_GLSL_SHADERS, USE_CG_SHADERS, USE_GXP_SHADERS)"
+#endif

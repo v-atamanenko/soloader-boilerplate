@@ -1,13 +1,8 @@
 /*
- * reimpl/pthr.c
- *
- * Wrapper for vitasdk/newlib pthread functions to work with
- * Android's pthread struct which is different
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2022      Rinnegatamante
  * Copyright (C) 2022      GrapheneCt
- * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
@@ -142,7 +137,7 @@ PTHR_INLINE int _mutex_t_static_init(pthread_mutex_t_bionic * mutex, const pthre
     if (ret == 0) {
         rememberObject(mutex);
     } else {
-        logv_error("mutex initialization for %p has failed", mutex);
+        l_error("mutex initialization for %p has failed", mutex);
     }
 
     return ret;
@@ -166,7 +161,7 @@ PTHR_INLINE int _cond_t_static_init(pthread_cond_t_bionic * cond, const pthread_
     if (ret == 0) {
         rememberObject(cond);
     } else {
-        logv_error("cond initialization for %p has failed", cond);
+        l_error("cond initialization for %p has failed", cond);
     }
 
     return ret;

@@ -1,11 +1,5 @@
 /*
- * reimpl/errno.c
- *
- * Provides wrappers for errno-related functions that translate the underlying
- * error numbers and their corresponding descriptions into Bionic (Android)
- * format, so that the target can perform its error checking normally.1222222222e34
- *
- * Copyright (C) 2023 Volodymyr Atamanenko
+ * Copyright (C) 2023-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
@@ -15,7 +9,7 @@
 
 #include <sys/errno.h>
 #include <string.h>
-#include "_errno_bionic.h"
+#include "reimpl/bits/_errno_bionic.h"
 #include "utils/logger.h"
 
 typedef struct {
@@ -125,7 +119,7 @@ int * __errno_soloader(void) {
 			return (int *) &errno_translation[i].errno_bionic;
 	}
 
-	logv_error("[errno]: Unexpected newlib errno %i, will return 0 instead of translation", e);
+	l_error("Unexpected newlib errno %i, will return 0 instead of translation", e);
 	return (int *) &errno_translation[0].errno_bionic;
 }
 
@@ -135,7 +129,7 @@ char * strerror_soloader(int error_number) {
 			return (char *) errno_translation[i].strerror;
 	}
 
-	logv_warn("[strerror]: Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
+	l_warn("Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
 	return (char *) errno_translation[0].strerror;
 }
 
@@ -148,7 +142,7 @@ int strerror_r_soloader(int error_number, char* buf, size_t buf_len) {
 	}
 
 	if (err == NULL) {
-		logv_warn("[strerror_r]: Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
+		l_warn("Unexpected bionic errno %i, will return 'Success' instead of translation", error_number);
 		err = errno_translation[0].strerror;
 	}
 

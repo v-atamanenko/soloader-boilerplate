@@ -1,38 +1,29 @@
 /*
- * dynlib.c
- *
- * Resolving dynamic imports of the .so.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      Rinnegatamante
- * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
  */
 
-// Disable IDE complaints about _identifiers and global interfaces
-#pragma ide diagnostic ignored "bugprone-reserved-identifier"
-#pragma ide diagnostic ignored "cppcoreguidelines-interfaces-global-init"
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-
-// Suppress `mktemp` deprecation warning
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-#include "dynlib.h"
+/**
+ * @file  dynlib.c
+ * @brief Resolving dynamic imports of the .so.
+ */
 
 #include <psp2/kernel/clib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <malloc.h>
 #include <math.h>
 #include <netdb.h>
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <zlib.h>
-#include <dirent.h>
 #include <locale.h>
 #include <poll.h>
 
@@ -40,9 +31,9 @@
 #include <sys/unistd.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <sys/param.h>
 
 #include <so_util/so_util.h>
+#include <utime.h>
 
 #include "utils/glutil.h"
 #include "utils/utils.h"
@@ -52,14 +43,17 @@
 #include <libc_bridge/libc_bridge.h>
 #endif
 
-#include "reimpl/env.h"
 #include "reimpl/errno.h"
 #include "reimpl/io.h"
-#include "reimpl/ioctl.h"
 #include "reimpl/log.h"
 #include "reimpl/mem.h"
 #include "reimpl/pthr.h"
 #include "reimpl/sys.h"
+#include "reimpl/egl.h"
+
+#define PAGE_SIZE 4096
+
+const unsigned int __page_size = PAGE_SIZE;
 
 extern void * _ZNSt9exceptionD2Ev;
 extern void * _ZSt17__throw_bad_allocv;
@@ -112,6 +106,7 @@ extern void *__aeabi_uldivmod;
 extern void *__aeabi_unwind_cpp_pr0;
 extern void *__aeabi_unwind_cpp_pr1;
 extern void *__cxa_atexit;
+extern void *__cxa_call_unexpected;
 extern void *__cxa_finalize;
 extern void *__cxa_guard_acquire;
 extern void *__cxa_guard_release;
@@ -119,7 +114,6 @@ extern void *__cxa_pure_virtual;
 extern void *__gnu_ldivmod_helper;
 extern void *__gnu_unwind_frame;
 extern void *__srget;
-extern void *__stack_chk_fail;
 extern void *__stack_chk_guard;
 extern void *__swbuf;
 
@@ -129,30 +123,12 @@ extern const short *BIONIC_toupper_tab_;
 
 static FILE __sF_fake[3];
 
-int __atomic_dec(volatile int *ptr) {
-    return __sync_fetch_and_sub (ptr, 1);
-}
-
-int __atomic_inc(volatile int *ptr) {
-    return __sync_fetch_and_add (ptr, 1);
-}
-
-int __system_property_get(const char* name, char* value) {
-    logv_error("__system_property_get(name: \"%s\")", name);
-    return 0;
-}
-
-int sigaction(int signal, const struct sigaction* bionic_new_action, struct sigaction* bionic_old_action) {
-    logv_error("sigaction: %i", signal);
-    return 0;
-}
-
-void *dlsym_fake(void *restrict handle, const char *restrict symbol) {
+void *dlsym_soloader(void * handle, const char * symbol) {
     // Usage example:
     // if (strcmp("AMotionEvent_getAxisValue", symbol) == 0)
     //    return &AMotionEvent_getAxisValue;
-    
-    logv_error("Symbol %s not found", symbol);
+
+    l_error("dlsym: Unknown symbol \"%s\".", symbol);
     return NULL;
 }
 
@@ -207,11 +183,15 @@ so_default_dynlib default_dynlib[] = {
         { "__aeabi_uldivmod", (uintptr_t)&__aeabi_uldivmod },
         { "__aeabi_unwind_cpp_pr0", (uintptr_t)&__aeabi_unwind_cpp_pr0 },
         { "__aeabi_unwind_cpp_pr1", (uintptr_t)&__aeabi_unwind_cpp_pr1 },
+        { "__atomic_cmpxchg", (uintptr_t)&__atomic_cmpxchg },
         { "__atomic_dec", (uintptr_t)&__atomic_dec },
         { "__atomic_inc", (uintptr_t)&__atomic_inc },
+        { "__atomic_swap", (uintptr_t)&__atomic_swap },
         { "__cxa_allocate_exception", (uintptr_t)&__cxa_allocate_exception },
         { "__cxa_atexit", (uintptr_t)&__cxa_atexit },
         { "__cxa_begin_catch", (uintptr_t)&__cxa_begin_catch },
+        { "__cxa_begin_cleanup", (uintptr_t)&ret0 },
+        { "__cxa_call_unexpected", (uintptr_t)&__cxa_call_unexpected },
         { "__cxa_end_catch", (uintptr_t)&__cxa_end_catch },
         { "__cxa_finalize", (uintptr_t)&__cxa_finalize },
         { "__cxa_free_exception", (uintptr_t)&__cxa_free_exception },
@@ -220,17 +200,21 @@ so_default_dynlib default_dynlib[] = {
         { "__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual },
         { "__cxa_rethrow", (uintptr_t)&__cxa_rethrow },
         { "__cxa_throw", (uintptr_t)&__cxa_throw },
+        { "__cxa_type_match", (uintptr_t)&ret0 },
+        { "__gnu_Unwind_Find_exidx", (uintptr_t)&ret0 },
         { "__gnu_ldivmod_helper", (uintptr_t)&__gnu_ldivmod_helper },
         { "__gnu_unwind_frame", (uintptr_t)&__gnu_unwind_frame },
         { "__google_potentially_blocking_region_begin", (uintptr_t)&ret0 },
         { "__google_potentially_blocking_region_end", (uintptr_t)&ret0 },
         { "__gxx_personality_v0", (uintptr_t)&__gxx_personality_v0 },
+        { "__isinf", (uintptr_t)&ret0 },
+        { "__page_size", (uintptr_t)&__page_size },
         { "__sF", (uintptr_t)&__sF_fake },
         { "__srget", (uintptr_t)&__srget },
-        { "__stack_chk_fail", (uintptr_t)&__stack_chk_fail },
+        { "__stack_chk_fail", (uintptr_t)&__stack_chk_fail_soloader },
         { "__stack_chk_guard", (uintptr_t)&__stack_chk_guard },
         { "__swbuf", (uintptr_t)&__swbuf },
-        { "__system_property_get", (uintptr_t)&__system_property_get },
+        { "__system_property_get", (uintptr_t)&__system_property_get_soloader },
 
 
         // ctype
@@ -362,16 +346,19 @@ so_default_dynlib default_dynlib[] = {
         // IO
         { "close", (uintptr_t)&close_soloader },
         { "closedir", (uintptr_t)&closedir_soloader },
+        { "execv", (uintptr_t)&ret0 },
         { "fclose", (uintptr_t)&fclose_soloader },
         { "fcntl", (uintptr_t)&fcntl_soloader },
         { "fopen", (uintptr_t)&fopen_soloader },
         { "fstat", (uintptr_t)&fstat_soloader },
+        { "fsync", (uintptr_t)&fsync_soloader },
         { "ioctl", (uintptr_t)&ioctl_soloader },
         { "open", (uintptr_t)&open_soloader },
         { "opendir", (uintptr_t)&opendir_soloader },
         { "readdir", (uintptr_t)&readdir_soloader },
         { "readdir_r", (uintptr_t)&readdir_r_soloader },
         { "stat", (uintptr_t)&stat_soloader },
+        { "utime", (uintptr_t)&utime },
 
         #ifdef USE_SCELIBC_IO
             { "fdopen", (uintptr_t)&sceLibcBridge_fdopen },
@@ -389,6 +376,7 @@ so_default_dynlib default_dynlib[] = {
             { "fseek", (uintptr_t)&sceLibcBridge_fseek },
             { "fsetpos", (uintptr_t)&sceLibcBridge_fsetpos },
             { "ftell", (uintptr_t)&sceLibcBridge_ftell },
+            { "fwide", (uintptr_t)&sceLibcBridge_fwide },
             { "fwrite", (uintptr_t)&sceLibcBridge_fwrite },
             { "getc", (uintptr_t)&sceLibcBridge_getc },
             { "getwc", (uintptr_t)&sceLibcBridge_getwc },
@@ -415,6 +403,7 @@ so_default_dynlib default_dynlib[] = {
             { "fseek", (uintptr_t)&fseek },
             { "fsetpos", (uintptr_t)&fsetpos },
             { "ftell", (uintptr_t)&ftell },
+            { "fwide", (uintptr_t)&fwide },
             { "fwrite", (uintptr_t)&fwrite },
             { "getc", (uintptr_t)&getc },
             { "getwc", (uintptr_t)&getwc },
@@ -428,6 +417,7 @@ so_default_dynlib default_dynlib[] = {
         #endif
 
         { "access", (uintptr_t)&access },
+        { "basename", (uintptr_t)&basename },
         { "chdir", (uintptr_t)&chdir },
         { "chmod", (uintptr_t)&chmod },
         { "dup", (uintptr_t)&dup },
@@ -447,7 +437,7 @@ so_default_dynlib default_dynlib[] = {
         { "rmdir", (uintptr_t)&rmdir },
         { "truncate", (uintptr_t)&truncate },
         { "unlink", (uintptr_t)&unlink },
-        { "write", (uintptr_t)&write },
+        { "write", (uintptr_t)&write_wrap },
 
 
         // *printf, *scanf
@@ -483,12 +473,15 @@ so_default_dynlib default_dynlib[] = {
         { "eglDestroyContext", (uintptr_t)&eglDestroyContext },
         { "eglDestroySurface", (uintptr_t)&eglDestroySurface },
         { "eglGetConfigAttrib", (uintptr_t)&eglGetConfigAttrib },
+        { "eglGetConfigs", (uintptr_t)&eglGetConfigs },
+        { "eglGetCurrentContext", (uintptr_t)&eglGetCurrentContext },
         { "eglGetDisplay", (uintptr_t)&eglGetDisplay },
         { "eglGetError", (uintptr_t)&eglGetError },
         { "eglGetProcAddress", (uintptr_t)&eglGetProcAddress },
         { "eglInitialize", (uintptr_t)&eglInitialize },
         { "eglMakeCurrent", (uintptr_t)&eglMakeCurrent },
         { "eglQueryContext", (uintptr_t)&eglQueryContext },
+        { "eglQueryString", (uintptr_t)&eglQueryString },
         { "eglQuerySurface", (uintptr_t)&eglQuerySurface },
         { "eglSwapBuffers", (uintptr_t)&eglSwapBuffers },
         { "eglTerminate", (uintptr_t)&eglTerminate },
@@ -496,7 +489,7 @@ so_default_dynlib default_dynlib[] = {
 
         // OpenGL
         { "glActiveTexture", (uintptr_t)&glActiveTexture },
-        { "glAlphaFunc", (uintptr_t) &glAlphaFunc },
+        { "glAlphaFunc", (uintptr_t)&glAlphaFunc },
         { "glAlphaFuncx", (uintptr_t)&glAlphaFuncx },
         { "glAttachShader", (uintptr_t)&glAttachShader },
         { "glBindAttribLocation", (uintptr_t)&glBindAttribLocation },
@@ -504,17 +497,20 @@ so_default_dynlib default_dynlib[] = {
         { "glBindFramebuffer", (uintptr_t)&glBindFramebuffer },
         { "glBindFramebufferOES", (uintptr_t)&glBindFramebuffer },
         { "glBindRenderbuffer", (uintptr_t)&glBindRenderbuffer },
-        { "glBindFramebufferOES", (uintptr_t)&glBindFramebuffer },
+        { "glBindRenderbufferOES", (uintptr_t)&glBindRenderbuffer },
         { "glBindTexture", (uintptr_t)&glBindTexture },
         { "glBlendColor", (uintptr_t)&ret0 },
         { "glBlendEquation", (uintptr_t)&glBlendEquation },
         { "glBlendEquationOES", (uintptr_t)&glBlendEquation },
         { "glBlendEquationSeparate", (uintptr_t)&glBlendEquationSeparate },
+        { "glBlendEquationSeparateOES", (uintptr_t)&glBlendEquationSeparate },
         { "glBlendFunc", (uintptr_t)&glBlendFunc },
         { "glBlendFuncSeparate", (uintptr_t)&glBlendFuncSeparate },
+        { "glBlendFuncSeparateOES", (uintptr_t)&glBlendFuncSeparate },
         { "glBufferData", (uintptr_t)&glBufferData },
         { "glBufferSubData", (uintptr_t)&glBufferSubData },
         { "glCheckFramebufferStatus", (uintptr_t)&glCheckFramebufferStatus },
+        { "glCheckFramebufferStatusOES", (uintptr_t)&glCheckFramebufferStatus },
         { "glClear", (uintptr_t)&glClear },
         { "glClearColor", (uintptr_t)&glClearColor },
         { "glClearColorx", (uintptr_t)&glClearColorx },
@@ -522,15 +518,14 @@ so_default_dynlib default_dynlib[] = {
         { "glClearDepthx", (uintptr_t)&glClearDepthx },
         { "glClearStencil", (uintptr_t)&glClearStencil },
         { "glClientActiveTexture", (uintptr_t)&glClientActiveTexture },
+        { "glClipPlanef", (uintptr_t)&glClipPlanef },
+        { "glClipPlanex", (uintptr_t)&glClipPlanex },
         { "glColor4f", (uintptr_t)&glColor4f },
+        { "glColor4ub", (uintptr_t)&glColor4ub },
         { "glColor4x", (uintptr_t)&glColor4x },
         { "glColorMask", (uintptr_t)&glColorMask },
         { "glColorPointer", (uintptr_t)&glColorPointer },
-#ifdef USE_CG_SHADERS
-        { "glCompileShader", (uintptr_t)&glCompileShaderHook },
-#else
-        { "glCompileShader", (uintptr_t)&glCompileShader },
-#endif
+        { "glCompileShader", (uintptr_t)&glCompileShader_soloader },
         { "glCompressedTexImage2D", (uintptr_t)&glCompressedTexImage2D },
         { "glCompressedTexSubImage2D", (uintptr_t)&ret0 },
         { "glCopyTexImage2D", (uintptr_t)&glCopyTexImage2D },
@@ -538,6 +533,7 @@ so_default_dynlib default_dynlib[] = {
         { "glCreateProgram", (uintptr_t)&glCreateProgram },
         { "glCreateShader", (uintptr_t)&glCreateShader },
         { "glCullFace", (uintptr_t)&glCullFace },
+        { "glCurrentPaletteMatrixOES", (uintptr_t)&ret0 },
         { "glDeleteBuffers", (uintptr_t)&glDeleteBuffers },
         { "glDeleteFramebuffers", (uintptr_t)&glDeleteFramebuffers },
         { "glDeleteFramebuffersOES", (uintptr_t)&glDeleteFramebuffers },
@@ -548,91 +544,174 @@ so_default_dynlib default_dynlib[] = {
         { "glDeleteTextures", (uintptr_t)&glDeleteTextures },
         { "glDepthFunc", (uintptr_t)&glDepthFunc },
         { "glDepthMask", (uintptr_t)&glDepthMask },
-        { "glDepthRangef", (uintptr_t) &glDepthRangef },
+        { "glDepthRangef", (uintptr_t)&glDepthRangef },
+        { "glDepthRangex", (uintptr_t)&glDepthRangex },
         { "glDetachShader", (uintptr_t)&ret0 },
         { "glDisable", (uintptr_t)&glDisable },
         { "glDisableClientState", (uintptr_t)&glDisableClientState },
         { "glDisableVertexAttribArray", (uintptr_t)&glDisableVertexAttribArray },
         { "glDrawArrays", (uintptr_t)&glDrawArrays },
         { "glDrawElements", (uintptr_t)&glDrawElements },
+        { "glDrawTexfOES", (uintptr_t)&ret0 },
+        { "glDrawTexfvOES", (uintptr_t)&ret0 },
+        { "glDrawTexiOES", (uintptr_t)&ret0 },
+        { "glDrawTexivOES", (uintptr_t)&ret0 },
+        { "glDrawTexsOES", (uintptr_t)&ret0 },
+        { "glDrawTexsvOES", (uintptr_t)&ret0 },
+        { "glDrawTexxOES", (uintptr_t)&ret0 },
+        { "glDrawTexxvOES", (uintptr_t)&ret0 },
+        { "glEGLImageTargetRenderbufferStorageOES", (uintptr_t)&ret0 },
+        { "glEGLImageTargetTexture2DOES", (uintptr_t)&ret0 },
         { "glEnable", (uintptr_t)&glEnable },
         { "glEnableClientState", (uintptr_t)&glEnableClientState },
         { "glEnableVertexAttribArray", (uintptr_t)&glEnableVertexAttribArray },
+        { "glFinish", (uintptr_t)&glFinish },
         { "glFlush", (uintptr_t)&glFlush },
+        { "glFogf", (uintptr_t)&glFogf },
+        { "glFogfv", (uintptr_t)&glFogfv },
+        { "glFogx", (uintptr_t)&glFogx },
+        { "glFogxv", (uintptr_t)&glFogxv },
         { "glFramebufferRenderbuffer", (uintptr_t)&glFramebufferRenderbuffer },
         { "glFramebufferRenderbufferOES", (uintptr_t)&glFramebufferRenderbuffer },
         { "glFramebufferTexture2D", (uintptr_t)&glFramebufferTexture2D },
-        { "glFramebufferTexture2DOES", (uintptr_t) &glFramebufferTexture2D },
+        { "glFramebufferTexture2DOES", (uintptr_t)&glFramebufferTexture2D },
         { "glFrontFace", (uintptr_t)&glFrontFace },
+        { "glFrustumf", (uintptr_t)&glFrustumf },
+        { "glFrustumx", (uintptr_t)&glFrustumx },
         { "glGenBuffers", (uintptr_t)&glGenBuffers },
+        { "glGenerateMipmap", (uintptr_t)&glGenerateMipmap },
+        { "glGenerateMipmapOES", (uintptr_t)&glGenerateMipmap },
         { "glGenFramebuffers", (uintptr_t)&glGenFramebuffers },
         { "glGenFramebuffersOES", (uintptr_t)&glGenFramebuffers },
         { "glGenRenderbuffers", (uintptr_t)&glGenRenderbuffers },
         { "glGenRenderbuffersOES", (uintptr_t)&glGenRenderbuffers },
         { "glGenTextures", (uintptr_t)&glGenTextures },
-        { "glGenerateMipmap", (uintptr_t)&glGenerateMipmap },
         { "glGetActiveAttrib", (uintptr_t)&glGetActiveAttrib },
         { "glGetActiveUniform", (uintptr_t)&glGetActiveUniform },
         { "glGetAttribLocation", (uintptr_t)&glGetAttribLocation },
+        { "glGetBooleanv", (uintptr_t)&glGetBooleanv },
+        { "glGetBufferParameteriv", (uintptr_t)&glGetBufferParameteriv },
+        { "glGetBufferPointervOES", (uintptr_t)&ret0 },
+        { "glGetClipPlanef", (uintptr_t)&ret0 },
+        { "glGetClipPlanex", (uintptr_t)&ret0 },
         { "glGetError", (uintptr_t)&glGetError },
+        { "glGetFixedv", (uintptr_t)&ret0 },
         { "glGetFloatv", (uintptr_t)&glGetFloatv },
+        { "glGetFramebufferAttachmentParameterivOES", (uintptr_t)&glGetFramebufferAttachmentParameteriv },
         { "glGetIntegerv", (uintptr_t)&glGetIntegerv },
+        { "glGetLightfv", (uintptr_t)&ret0 },
+        { "glGetLightxv", (uintptr_t)&ret0 },
+        { "glGetMaterialfv", (uintptr_t)&ret0 },
+        { "glGetMaterialxv", (uintptr_t)&ret0 },
+        { "glGetPointerv", (uintptr_t)&ret0 },
+        { "glGetRenderbufferParameterivOES", (uintptr_t)&ret0 },
         { "glGetProgramInfoLog", (uintptr_t)&glGetProgramInfoLog },
         { "glGetProgramiv", (uintptr_t)&glGetProgramiv },
         { "glGetShaderInfoLog", (uintptr_t)&glGetShaderInfoLog },
         { "glGetShaderiv", (uintptr_t)&glGetShaderiv },
         { "glGetString", (uintptr_t)&glGetString },
+        { "glGetTexEnvfv", (uintptr_t)&ret0 },
+        { "glGetTexEnviv", (uintptr_t)&glGetTexEnviv },
+        { "glGetTexEnvxv", (uintptr_t)&ret0 },
+        { "glGetTexGenfvOES", (uintptr_t)&ret0 },
+        { "glGetTexGenivOES", (uintptr_t)&ret0 },
+        { "glGetTexGenxvOES", (uintptr_t)&ret0 },
+        { "glGetTexParameterfv", (uintptr_t)&ret0 },
+        { "glGetTexParameteriv", (uintptr_t)&ret0 },
+        { "glGetTexParameterxv", (uintptr_t)&ret0 },
         { "glGetUniformLocation", (uintptr_t)&glGetUniformLocation },
         { "glHint", (uintptr_t)&glHint },
+        { "glIsBuffer", (uintptr_t)&ret0 },
+        { "glIsEnabled", (uintptr_t)&glIsEnabled },
+        { "glIsFramebufferOES", (uintptr_t)&glIsFramebuffer },
+        { "glIsRenderbufferOES", (uintptr_t)&glIsRenderbuffer },
+        { "glIsTexture", (uintptr_t)&glIsTexture },
+        { "glLightf", (uintptr_t)&ret0 },
+        { "glLightfv", (uintptr_t)&glLightfv },
+        { "glLightModelf", (uintptr_t)&ret0 },
+        { "glLightModelfv", (uintptr_t)&glLightModelfv },
+        { "glLightModelx", (uintptr_t)&ret0 },
         { "glLightModelxv", (uintptr_t)&glLightModelxv },
         { "glLightx", (uintptr_t)&ret0 },
         { "glLightxv", (uintptr_t)&glLightxv },
         { "glLineWidth", (uintptr_t)&glLineWidth },
+        { "glLineWidthx", (uintptr_t)&glLineWidthx },
         { "glLinkProgram", (uintptr_t)&glLinkProgram },
         { "glLoadIdentity", (uintptr_t)&glLoadIdentity },
         { "glLoadMatrixf", (uintptr_t)&glLoadMatrixf },
         { "glLoadMatrixx", (uintptr_t)&glLoadMatrixx },
+        { "glLoadPaletteFromModelViewMatrixOES", (uintptr_t)&ret0 },
+        { "glLogicOp", (uintptr_t)&ret0 },
         { "glMapBuffer", (uintptr_t)&glMapBuffer },
         { "glMapBufferOES", (uintptr_t)&glMapBuffer },
         { "glMaterialf", (uintptr_t)&glMaterialf },
         { "glMaterialfv", (uintptr_t)&glMaterialfv },
-        { "glMaterialx", (uintptr_t)&ret0 },
+        { "glMaterialx", (uintptr_t)&glMaterialx },
         { "glMaterialxv", (uintptr_t)&glMaterialxv },
+        { "glMatrixIndexPointerOES", (uintptr_t)&ret0 },
         { "glMatrixMode", (uintptr_t)&glMatrixMode },
+        { "glMultiTexCoord4f", (uintptr_t)&ret0 },
+        { "glMultiTexCoord4x", (uintptr_t)&ret0},
         { "glMultMatrixf", (uintptr_t)&glMultMatrixf },
+        { "glMultMatrixx", (uintptr_t)&glMultMatrixx },
+        { "glNormal3f", (uintptr_t)&glNormal3f },
+        { "glNormal3x", (uintptr_t)&glNormal3x },
         { "glNormalPointer", (uintptr_t)&glNormalPointer },
-        { "glPixelStorei", (uintptr_t)&ret0 },
+        { "glOrthof", (uintptr_t)&glOrthof },
+        { "glOrthox", (uintptr_t)&glOrthox },
+        { "glPixelStorei", (uintptr_t)&glPixelStorei },
+        { "glPointParameterf", (uintptr_t)&ret0 },
+        { "glPointParameterfv", (uintptr_t)&ret0 },
+        { "glPointParameterx", (uintptr_t)&ret0 },
+        { "glPointParameterxv", (uintptr_t)&ret0 },
+        { "glPointSize", (uintptr_t)&glPointSize },
+        { "glPointSizePointerOES", (uintptr_t)&ret0 },
+        { "glPointSizex", (uintptr_t)&glPointSizex },
         { "glPolygonOffset", (uintptr_t)&glPolygonOffset },
+        { "glPolygonOffsetx", (uintptr_t)&glPolygonOffsetx },
         { "glPopMatrix", (uintptr_t)&glPopMatrix },
         { "glPushMatrix", (uintptr_t)&glPushMatrix },
+        { "glQueryMatrixxOES", (uintptr_t)&ret0 },
         { "glReadPixels", (uintptr_t)&glReadPixels },
         { "glRenderbufferStorage", (uintptr_t)&glRenderbufferStorage },
         { "glRenderbufferStorageOES", (uintptr_t)&glRenderbufferStorage },
         { "glRotatef", (uintptr_t)&glRotatef },
+        { "glRotatex", (uintptr_t)&glRotatex },
         { "glSampleCoverage", (uintptr_t)&ret0 },
+        { "glSampleCoveragex", (uintptr_t)&ret0 },
         { "glScalef", (uintptr_t)&glScalef },
+        { "glScalex", (uintptr_t)&glScalex },
         { "glScissor", (uintptr_t)&glScissor },
         { "glShadeModel", (uintptr_t)&glShadeModel },
-#ifdef USE_CG_SHADERS
-        { "glShaderSource", (uintptr_t)&glShaderSourceHook },
-#else
-        { "glShaderSource", (uintptr_t)&glShaderSource },
-#endif
+        { "glShaderSource", (uintptr_t)&glShaderSource_soloader },
         { "glStencilFunc", (uintptr_t)&glStencilFunc },
         { "glStencilFuncSeparate", (uintptr_t)&glStencilFuncSeparate },
         { "glStencilMask", (uintptr_t)&glStencilMask },
         { "glStencilOp", (uintptr_t)&glStencilOp },
         { "glStencilOpSeparate", (uintptr_t)&glStencilOpSeparate },
         { "glTexCoordPointer", (uintptr_t)&glTexCoordPointer },
+        { "glTexEnvf", (uintptr_t)&glTexEnvf },
         { "glTexEnvfv", (uintptr_t)&glTexEnvfv },
         { "glTexEnvi", (uintptr_t)&glTexEnvi },
+        { "glTexEnviv", (uintptr_t)&ret0 },
         { "glTexEnvx", (uintptr_t)&glTexEnvx },
         { "glTexEnvxv", (uintptr_t)&glTexEnvxv },
+        { "glTexGenfOES", (uintptr_t)&ret0 },
+        { "glTexGenfvOES", (uintptr_t)&ret0 },
+        { "glTexGeniOES", (uintptr_t)&ret0 },
+        { "glTexGenivOES", (uintptr_t)&ret0 },
+        { "glTexGenxOES", (uintptr_t)&ret0 },
+        { "glTexGenxvOES", (uintptr_t)&ret0 },
         { "glTexImage2D", (uintptr_t)&glTexImage2D },
         { "glTexParameterf", (uintptr_t)&glTexParameterf },
+        { "glTexParameterfv", (uintptr_t)&ret0 },
         { "glTexParameteri", (uintptr_t)&glTexParameteri },
+        { "glTexParameteriv", (uintptr_t)&glTexParameteriv },
+        { "glTexParameterx", (uintptr_t)&glTexParameterx },
+        { "glTexParameterxv", (uintptr_t)&ret0 },
         { "glTexSubImage2D", (uintptr_t)&glTexSubImage2D },
         { "glTranslatef", (uintptr_t)&glTranslatef },
+        { "glTranslatex", (uintptr_t)&glTranslatex },
         { "glUniform1f", (uintptr_t)&glUniform1f },
         { "glUniform1fv", (uintptr_t)&glUniform1fv },
         { "glUniform1i", (uintptr_t)&glUniform1i },
@@ -657,6 +736,7 @@ so_default_dynlib default_dynlib[] = {
         { "glVertexAttribPointer", (uintptr_t)&glVertexAttribPointer },
         { "glVertexPointer", (uintptr_t)&glVertexPointer },
         { "glViewport", (uintptr_t)&glViewport },
+        { "glWeightPointerOES", (uintptr_t)&ret0 },
 
 
         // Pthread
@@ -664,6 +744,7 @@ so_default_dynlib default_dynlib[] = {
         { "pthread_attr_init", (uintptr_t) &pthread_attr_init_soloader },
         { "pthread_attr_setdetachstate", (uintptr_t) &pthread_attr_setdetachstate_soloader },
         { "pthread_attr_setstacksize", (uintptr_t) &pthread_attr_setstacksize_soloader },
+        { "pthread_attr_setschedparam", (uintptr_t) &ret0 },
         { "pthread_cond_broadcast", (uintptr_t) &pthread_cond_broadcast_soloader },
         { "pthread_cond_destroy", (uintptr_t) &pthread_cond_destroy_soloader },
         { "pthread_cond_init", (uintptr_t) &pthread_cond_init_soloader },
@@ -687,6 +768,7 @@ so_default_dynlib default_dynlib[] = {
         { "pthread_mutex_unlock", (uintptr_t) &pthread_mutex_unlock_soloader },
         { "pthread_mutexattr_destroy", (uintptr_t) &pthread_mutexattr_destroy_soloader },
         { "pthread_mutexattr_init", (uintptr_t) &pthread_mutexattr_init_soloader },
+        { "pthread_mutexattr_setpshared", (uintptr_t) &ret0 },
         { "pthread_mutexattr_settype", (uintptr_t) &pthread_mutexattr_settype_soloader },
         { "pthread_once", (uintptr_t)&pthread_once_soloader },
         { "pthread_self", (uintptr_t) &pthread_self_soloader },
@@ -751,7 +833,7 @@ so_default_dynlib default_dynlib[] = {
         { "dlclose", (uintptr_t)&ret0 },
         { "dlerror", (uintptr_t)&ret0 },
         { "dlopen", (uintptr_t)&ret1 },
-        { "dlsym", (uintptr_t)&dlsym_fake },
+        { "dlsym", (uintptr_t)&dlsym_soloader },
 
 
         // Errno
@@ -789,15 +871,18 @@ so_default_dynlib default_dynlib[] = {
 
 
         // Syscalls
+        { "fork", (uintptr_t)&fork },
+        { "sbrk", (uintptr_t)&sbrk },
         { "syscall", (uintptr_t)&syscall },
         { "sysconf", (uintptr_t)&ret0 },
         { "system", (uintptr_t)&system },
+        { "waitpid", (uintptr_t)&ret0 },
 
 
         // Time
-        { "clock", (uintptr_t)&clock },
-        { "clock_getres", (uintptr_t)&clock_getres },
-        { "clock_gettime", (uintptr_t)&clock_gettime },
+        { "clock", (uintptr_t)&clock_soloader },
+        { "clock_getres", (uintptr_t)&clock_getres_soloader },
+        { "clock_gettime", (uintptr_t)&clock_gettime_soloader },
         { "difftime", (uintptr_t)&difftime },
         { "gettimeofday", (uintptr_t)&gettimeofday },
         { "gmtime", (uintptr_t)&gmtime },
@@ -819,12 +904,12 @@ so_default_dynlib default_dynlib[] = {
 
 
         // stdlib
-        { "abort", (uintptr_t)&abort },
+        { "abort", (uintptr_t)&abort_soloader },
         { "atof", (uintptr_t)&atof },
         { "atoi", (uintptr_t)&atoi },
         { "atol", (uintptr_t)&atol },
         { "atoll", (uintptr_t)&atoll },
-        { "exit", (uintptr_t)&exit },
+        { "exit", (uintptr_t)&exit_soloader },
         { "lrand48", (uintptr_t)&lrand48 },
         { "prctl", (uintptr_t)&ret0 },
         { "sleep", (uintptr_t)&sleep },

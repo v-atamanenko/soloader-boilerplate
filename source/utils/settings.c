@@ -1,8 +1,4 @@
 /*
- * utils/settings.c
- *
- * Loader settings that can be set via the companion app.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *

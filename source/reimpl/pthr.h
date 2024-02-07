@@ -1,9 +1,4 @@
 /*
- * reimpl/pthr.h
- *
- * Wrapper for vitasdk/newlib pthread functions to work with
- * Android's pthread struct which is different
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2022      Rinnegatamante
  * Copyright (C) 2022      GrapheneCt
@@ -11,6 +6,12 @@
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
+ */
+
+/**
+ * @file  pthr.h
+ * @brief Wrapper for vitasdk/newlib pthread functions to work with
+ *        Android's pthread structs which are different
  */
 
 #ifndef SOLOADER_PTHR_H
