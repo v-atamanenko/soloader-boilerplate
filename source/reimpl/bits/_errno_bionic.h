@@ -26,11 +26,12 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef SOLOADER_ERRNO_BIONIC_H
+#define SOLOADER_ERRNO_BIONIC_H
 
 /**
- * @file errno.h
- * @brief Standard C error handling.
+ * @file _errno_bionic.h
+ * @brief Error codes as defined in Bionic (Android).
  */
 
 #define EPERM_BIONIC 1
@@ -171,3 +172,5 @@
 /** On Linux, ENOTSUP and EOPNOTSUPP are the same despite POSIX saying they should be distinct. */
 #define ENOTSUP_BIONIC EOPNOTSUPP_BIONIC
 #endif
+
+#endif // SOLOADER_ERRNO_BIONIC_H

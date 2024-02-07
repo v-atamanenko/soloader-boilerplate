@@ -1,14 +1,15 @@
 /*
- * utils/dialog.h
- *
- * Common dialog for error messages and cheats input.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      fgsfds
  * Copyright (C) 2022-2023 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
+ */
+
+/**
+ * @file  dialog.h
+ * @brief Common dialog for error messages and cheats input.
  */
 
 #ifndef SOLOADER_DIALOG_H

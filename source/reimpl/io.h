@@ -1,14 +1,15 @@
 /*
- * reimpl/io.h
- *
- * Wrappers and implementations for some of the IO functions.
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2022      Rinnegatamante
- * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
+ */
+
+/**
+ * @file  io.h
+ * @brief Wrappers and implementations for some of the IO functions.
  */
 
 #ifndef SOLOADER_IO_H
@@ -69,19 +70,20 @@ typedef struct __attribute__((__packed__)) dirent64_bionic {
     char d_name[256]; // 256 bytes // offset 0x13
 } dirent64_bionic;
 
-int open_soloader(char *fname, int flags);
+int open_soloader(const char * path, int oflag, ...);
 
-FILE *fopen_soloader(char *fname, char *mode);
+FILE * fopen_soloader(const char * filename, const char * mode);
 
 DIR *opendir_soloader(char *name);
 
-int stat_soloader(char *pathname, stat64_bionic *statbuf);
+int stat_soloader(const char * path, stat64_bionic * buf);
 
-int fstat_soloader(int fd, void *statbuf);
+int fstat_soloader(int fd, stat64_bionic * buf);
 
-struct dirent *readdir_soloader(DIR *dir);
+struct dirent64_bionic * readdir_soloader(DIR *dir);
 
-int readdir_r_soloader(DIR *dirp, dirent64_bionic *entry, dirent64_bionic **result);
+int readdir_r_soloader(DIR * dirp, dirent64_bionic * entry,
+                       dirent64_bionic ** result);
 
 int close_soloader(int fd);
 
@@ -90,6 +92,10 @@ int fclose_soloader(FILE *f);
 int closedir_soloader(DIR *dir);
 
 int fcntl_soloader(int fd, int cmd, ...);
+
+int ioctl_soloader(int fd, int request, ... /* arg */);
+
+int fsync_soloader(int fd);
 
 #ifdef __cplusplus
 };

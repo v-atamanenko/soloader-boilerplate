@@ -1,14 +1,17 @@
 /*
- * reimpl/errno.h
- *
- * Provides wrappers for errno-related functions that translate the underlying
- * error numbers and their corresponding descriptions into Bionic (Android)
- * format, so that the target can perform its error checking normally.1222222222e34
- *
- * Copyright (C) 2023 Volodymyr Atamanenko
+ * Copyright (C) 2023-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
+ */
+
+/**
+ * @file  errno.h
+ * @brief Error code translation between newlib (Vita) and bionic (Android)
+ *
+ * Provides wrappers for errno-related functions that translate the underlying
+ * error numbers and their corresponding descriptions into Bionic (Android)
+ * format, so that the target can perform its error checking normally.
  */
 
 #ifndef SOLOADER_ERRNO_H

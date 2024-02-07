@@ -1,9 +1,7 @@
 /*
- * utils/init.c
- *
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021-2022 Rinnegatamante
- * Copyright (C) 2022-2023 Volodymyr Atamanenko
+ * Copyright (C) 2022-2024 Volodymyr Atamanenko
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
@@ -16,9 +14,6 @@
 #include "utils/logger.h"
 #include "utils/utils.h"
 #include "utils/settings.h"
-
-#include "dynlib.h"
-#include "patch.h"
 
 #include <string.h>
 
@@ -56,13 +51,15 @@ void soloader_init_all() {
     scePowerSetGpuXbarClockFrequency(166);
 
 #ifdef USE_SCELIBC_IO
-    fios_init(DATA_PATH);
-    log_info("fios init passed.");
+    if (fios_init(DATA_PATH) == 0)
+        l_success("FIOS initialized.");
 #endif
 
-    if (!module_loaded("kubridge"))
+    if (!module_loaded("kubridge")) {
+        l_fatal("kubridge is not loaded.");
         fatal_error("Error: kubridge.skprx is not installed.");
-    log_info("kubridge check passed.");
+    }
+    l_success("kubridge check passed.");
 
     if (!file_exists(SO_PATH)) {
         fatal_error("Looks like you haven't installed the data files for this "
@@ -70,30 +67,32 @@ void soloader_init_all() {
                     "sure that you have %s file exactly at that path.", SO_PATH);
     }
 
-    if (so_file_load(&so_mod, SO_PATH, LOAD_ADDRESS) < 0)
+    if (so_file_load(&so_mod, SO_PATH, LOAD_ADDRESS) < 0) {
+        l_fatal("SO could not be loaded.");
         fatal_error("Error: could not load %s.", SO_PATH);
+    }
 
     settings_load();
-    log_info("settings_load() passed.");
+    l_success("Settings loaded.");
 
     so_relocate(&so_mod);
-    log_info("so_relocate() passed.");
+    l_success("SO relocated.");
 
     resolve_imports(&so_mod);
-    log_info("so_resolve() passed.");
+    l_success("SO imports resolved.");
 
     so_patch();
-    log_info("so_patch() passed.");
+    l_success("SO patched.");
 
     so_flush_caches(&so_mod);
-    log_info("so_flush_caches() passed.");
+    l_success("SO caches flushed.");
 
     so_initialize(&so_mod);
-    log_info("so_initialize() passed.");
+    l_success("SO initialized.");
 
     gl_preload();
-    log_info("gl_preload() passed.");
+    l_success("OpenGL preloaded.");
 
     jni_init();
-    log_info("jni_init() passed.");
+    l_success("FalsoJNI initialized.");
 }
