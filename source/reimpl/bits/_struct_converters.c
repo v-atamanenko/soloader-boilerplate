@@ -80,6 +80,7 @@ dirent64_bionic * dirent_newlib_to_bionic(const struct dirent* dirent_newlib) {
 SC_INLINE
 void stat_newlib_to_bionic(const struct stat * src, stat64_bionic * dst) {
     dst->st_dev = src->st_dev;
+    dst->__st_ino = src->st_ino;
     dst->st_ino = src->st_ino;
     dst->st_mode = src->st_mode;
     dst->st_nlink = src->st_nlink;
@@ -89,10 +90,10 @@ void stat_newlib_to_bionic(const struct stat * src, stat64_bionic * dst) {
     dst->st_size = src->st_size;
     dst->st_blksize = src->st_blksize;
     dst->st_blocks = src->st_blocks;
-    dst->st_atime = src->st_atime;
-    dst->st_atime_nsec = 0;
-    dst->st_mtime = src->st_mtime;
-    dst->st_mtime_nsec = 0;
-    dst->st_ctime = src->st_ctime;
-    dst->st_ctime_nsec = 0;
+    dst->st_atim.tv_sec = src->st_atime;
+    dst->st_atim.tv_nsec = 0;
+    dst->st_mtim.tv_sec = src->st_mtime;
+    dst->st_mtim.tv_nsec = 0;
+    dst->st_ctim.tv_sec = src->st_ctime;
+    dst->st_ctim.tv_nsec = 0;
 }

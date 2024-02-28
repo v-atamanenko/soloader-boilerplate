@@ -50,8 +50,8 @@
 #include "reimpl/pthr.h"
 #include "reimpl/sys.h"
 #include "reimpl/egl.h"
-
-#define PAGE_SIZE 4096
+#include "reimpl/time64.h"
+#include "reimpl/asset_manager.h"
 
 const unsigned int __page_size = PAGE_SIZE;
 
@@ -166,9 +166,9 @@ so_default_dynlib default_dynlib[] = {
         { "__aeabi_memclr", (uintptr_t)&__aeabi_memclr },
         { "__aeabi_memclr4", (uintptr_t)&__aeabi_memclr },
         { "__aeabi_memclr8", (uintptr_t)&__aeabi_memclr },
-        { "__aeabi_memcpy", (uintptr_t)&__aeabi_memcpy },
-        { "__aeabi_memcpy4", (uintptr_t)&__aeabi_memcpy },
-        { "__aeabi_memcpy8", (uintptr_t)&__aeabi_memcpy },
+        { "__aeabi_memcpy", (uintptr_t)&sceClibMemcpy },
+        { "__aeabi_memcpy4", (uintptr_t)&sceClibMemcpy },
+        { "__aeabi_memcpy8", (uintptr_t)&sceClibMemcpy },
         { "__aeabi_memmove", (uintptr_t)&__aeabi_memmove },
         { "__aeabi_memmove4", (uintptr_t)&__aeabi_memmove },
         { "__aeabi_memmove8", (uintptr_t)&__aeabi_memmove },
@@ -237,9 +237,22 @@ so_default_dynlib default_dynlib[] = {
 
 
         // Android SDK standard logging
+        { "__android_log_assert", (uintptr_t)&__android_log_assert },
         { "__android_log_print", (uintptr_t)&__android_log_print },
         { "__android_log_vprint", (uintptr_t)&__android_log_vprint },
         { "__android_log_write", (uintptr_t)&__android_log_write },
+
+
+        // AAssetManager
+        { "AAsset_close", (uintptr_t)&AAsset_close },
+        { "AAsset_getLength", (uintptr_t)&AAsset_getLength },
+        { "AAsset_getRemainingLength", (uintptr_t)&AAsset_getRemainingLength },
+        { "AAsset_read", (uintptr_t)&AAsset_read },
+        { "AAsset_seek", (uintptr_t)&AAsset_seek },
+        { "AAssetDir_close", (uintptr_t)&AAssetDir_close },
+        { "AAssetManager_fromJava", (uintptr_t)&ret1 },
+        { "AAssetManager_open", (uintptr_t)&AAssetManager_open },
+        { "AAssetManager_openDir", (uintptr_t)&AAssetManager_openDir },
 
 
         // Math
@@ -288,6 +301,7 @@ so_default_dynlib default_dynlib[] = {
         { "sincosf", (uintptr_t)&sincosf },
         { "sinf", (uintptr_t)&sinf },
         { "sinh", (uintptr_t)&sinh },
+        { "sinhf", (uintptr_t)&sinhf },
         { "sqrt", (uintptr_t)&sqrt },
         { "sqrtf", (uintptr_t)&sqrtf },
         { "tan", (uintptr_t)&tan },
@@ -333,7 +347,7 @@ so_default_dynlib default_dynlib[] = {
         { "malloc", (uintptr_t)&malloc },
         { "memalign", (uintptr_t)&memalign },
         { "memcmp", (uintptr_t)&memcmp },
-        { "memcpy", (uintptr_t)&memcpy },
+        { "memcpy", (uintptr_t)&sceClibMemcpy },
         { "memmem", (uintptr_t)&memmem },
         { "memmove", (uintptr_t)&memmove },
         { "memset", (uintptr_t)&memset },
@@ -437,7 +451,7 @@ so_default_dynlib default_dynlib[] = {
         { "rmdir", (uintptr_t)&rmdir },
         { "truncate", (uintptr_t)&truncate },
         { "unlink", (uintptr_t)&unlink },
-        { "write", (uintptr_t)&write_wrap },
+        { "write", (uintptr_t)&write },
 
 
         // *printf, *scanf
@@ -608,6 +622,7 @@ so_default_dynlib default_dynlib[] = {
         { "glGetProgramInfoLog", (uintptr_t)&glGetProgramInfoLog },
         { "glGetProgramiv", (uintptr_t)&glGetProgramiv },
         { "glGetShaderInfoLog", (uintptr_t)&glGetShaderInfoLog },
+        { "glGetShaderSource", (uintptr_t)&glGetShaderSource },
         { "glGetShaderiv", (uintptr_t)&glGetShaderiv },
         { "glGetString", (uintptr_t)&glGetString },
         { "glGetTexEnvfv", (uintptr_t)&ret0 },
@@ -733,6 +748,7 @@ so_default_dynlib default_dynlib[] = {
         { "glUseProgram", (uintptr_t)&glUseProgram },
         { "glValidateProgram", (uintptr_t)&ret0 },
         { "glVertexAttrib4f", (uintptr_t)&glVertexAttrib4f },
+        { "glVertexAttrib4fv", (uintptr_t)&glVertexAttrib4fv },
         { "glVertexAttribPointer", (uintptr_t)&glVertexAttribPointer },
         { "glVertexPointer", (uintptr_t)&glVertexPointer },
         { "glViewport", (uintptr_t)&glViewport },
@@ -745,12 +761,14 @@ so_default_dynlib default_dynlib[] = {
         { "pthread_attr_setdetachstate", (uintptr_t) &pthread_attr_setdetachstate_soloader },
         { "pthread_attr_setstacksize", (uintptr_t) &pthread_attr_setstacksize_soloader },
         { "pthread_attr_setschedparam", (uintptr_t) &ret0 },
+
         { "pthread_cond_broadcast", (uintptr_t) &pthread_cond_broadcast_soloader },
         { "pthread_cond_destroy", (uintptr_t) &pthread_cond_destroy_soloader },
         { "pthread_cond_init", (uintptr_t) &pthread_cond_init_soloader },
         { "pthread_cond_signal", (uintptr_t) &pthread_cond_signal_soloader },
         { "pthread_cond_timedwait", (uintptr_t) &pthread_cond_timedwait_soloader },
         { "pthread_cond_wait", (uintptr_t) &pthread_cond_wait_soloader },
+
         { "pthread_create", (uintptr_t) &pthread_create_soloader },
         { "pthread_detach", (uintptr_t) &pthread_detach_soloader },
         { "pthread_equal", (uintptr_t) &pthread_equal_soloader },
@@ -761,6 +779,7 @@ so_default_dynlib default_dynlib[] = {
         { "pthread_key_create", (uintptr_t)&pthread_key_create },
         { "pthread_key_delete", (uintptr_t)&pthread_key_delete },
         { "pthread_kill", (uintptr_t)&pthread_kill_soloader },
+
         { "pthread_mutex_destroy", (uintptr_t) &pthread_mutex_destroy_soloader },
         { "pthread_mutex_init", (uintptr_t) &pthread_mutex_init_soloader },
         { "pthread_mutex_lock", (uintptr_t) &pthread_mutex_lock_soloader },
@@ -768,9 +787,10 @@ so_default_dynlib default_dynlib[] = {
         { "pthread_mutex_unlock", (uintptr_t) &pthread_mutex_unlock_soloader },
         { "pthread_mutexattr_destroy", (uintptr_t) &pthread_mutexattr_destroy_soloader },
         { "pthread_mutexattr_init", (uintptr_t) &pthread_mutexattr_init_soloader },
-        { "pthread_mutexattr_setpshared", (uintptr_t) &ret0 },
         { "pthread_mutexattr_settype", (uintptr_t) &pthread_mutexattr_settype_soloader },
+        { "pthread_mutexattr_setpshared", (uintptr_t) &ret0 },
         { "pthread_once", (uintptr_t)&pthread_once_soloader },
+
         { "pthread_self", (uintptr_t) &pthread_self_soloader },
         { "pthread_setname_np", (uintptr_t) &pthread_setname_np_soloader },
         { "pthread_setschedparam", (uintptr_t) &pthread_setschedparam_soloader },
@@ -872,6 +892,8 @@ so_default_dynlib default_dynlib[] = {
 
         // Syscalls
         { "fork", (uintptr_t)&fork },
+        { "getpagesize", (uintptr_t)&getpagesize },
+        { "getpid", (uintptr_t)&getpid },
         { "sbrk", (uintptr_t)&sbrk },
         { "syscall", (uintptr_t)&syscall },
         { "sysconf", (uintptr_t)&ret0 },
@@ -886,10 +908,13 @@ so_default_dynlib default_dynlib[] = {
         { "difftime", (uintptr_t)&difftime },
         { "gettimeofday", (uintptr_t)&gettimeofday },
         { "gmtime", (uintptr_t)&gmtime },
+        { "gmtime64", (uintptr_t)&gmtime64 },
         { "gmtime_r", (uintptr_t)&gmtime_r },
         { "localtime", (uintptr_t)&localtime },
+        { "localtime64", (uintptr_t)&localtime64 },
         { "localtime_r", (uintptr_t)&localtime_r },
         { "mktime", (uintptr_t)&mktime },
+        { "mktime64", (uintptr_t)&mktime64 },
         { "nanosleep", (uintptr_t)&nanosleep },
         { "strftime", (uintptr_t)&strftime },
         { "time", (uintptr_t)&time },

@@ -67,6 +67,25 @@ int __android_log_print(int prio, const char *tag, const char *fmt, ...)
 int __android_log_vprint(int prio, const char *tag, const char *fmt, va_list ap)
     __attribute__((__format__(printf, 3, 0)));
 
+/**
+ * Writes an assertion failure to the log (as `ANDROID_LOG_FATAL`) and to
+ * stderr, before calling
+ * [abort(3)](http://man7.org/linux/man-pages/man3/abort.3.html).
+ *
+ * If `fmt` is non-null, `cond` is unused. If `fmt` is null, the string
+ * `Assertion failed: %s` is used with `cond` as the string argument.
+ * If both `fmt` and `cond` are null, a default string is provided.
+ *
+ * Most callers should use
+ * [assert(3)](http://man7.org/linux/man-pages/man3/assert.3.html) from
+ * `&lt;assert.h&gt;` instead, or the `__assert` and `__assert2` functions
+ * provided by bionic if more control is needed. They support automatically
+ * including the source filename and line number more conveniently than this
+ * function.
+ */
+void __android_log_assert(const char* cond, const char* tag, const char* fmt, ...)
+__attribute__((__noreturn__)) __attribute__((__format__(printf, 3, 4)));
+
 #ifdef __cplusplus
 };
 #endif
