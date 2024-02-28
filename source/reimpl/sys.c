@@ -145,3 +145,7 @@ int setenv_soloader(const char * name, const char * value, int overwrite) {
     l_warn("setenv(\"%s\", \"%s\"): not implemented.", name, value);
     return 0;
 }
+
+int getpagesize(void) {
+    return PAGE_SIZE;
+}

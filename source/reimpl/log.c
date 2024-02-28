@@ -10,6 +10,7 @@
 #include "reimpl/log.h"
 #include "utils/logger.h"
 #include <psp2/kernel/clib.h>
+#include <stdlib.h>
 
 #define print_common \
     switch (prio) { \
@@ -59,4 +60,25 @@ int __android_log_vprint(int prio, const char* tag, const char* fmt, va_list ap)
     print_common
 
     return 0;
+}
+
+void __android_log_assert(const char* cond, const char* tag, const char* fmt, ...) {
+    if (fmt) {
+        va_list list;
+        char text[1024];
+
+        va_start(list, fmt);
+        sceClibVsnprintf(text, sizeof(text), fmt, list);
+        va_end(list);
+
+        l_fatal("[ALOG][ASSERT] %s", text);
+    } else {
+        if (cond) {
+            l_fatal("[ALOG][ASSERT] Assertion failed: %s", cond);
+        } else {
+            l_fatal("[ALOG][ASSERT] Unspecified assertion failed");
+        }
+    }
+
+    abort();
 }
