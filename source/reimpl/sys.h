@@ -21,6 +21,8 @@ extern "C" {
 
 #include <sys/time.h>
 
+#define PAGE_SIZE 4096
+
 clock_t clock_soloader(void);
 
 int clock_gettime_soloader(clockid_t clock_id, struct timespec * tp);
@@ -50,6 +52,8 @@ int __atomic_cmpxchg(int old_value, int new_value, volatile int* ptr);
 char * getenv_soloader(const char * name);
 
 int setenv_soloader(const char * name, const char * value, int overwrite);
+
+int getpagesize(void);
 
 #ifdef __cplusplus
 };

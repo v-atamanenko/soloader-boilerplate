@@ -43,23 +43,20 @@ extern "C" {
 typedef struct __attribute__((__packed__)) stat64_bionic {
     unsigned long long st_dev;
     unsigned char __pad0[4];
-    unsigned long st_ino;
+    unsigned long __st_ino;
     unsigned int st_mode;
-    unsigned int st_nlink;
-    unsigned long st_uid;
-    unsigned long st_gid;
+    nlink_t st_nlink;
+    uid_t st_uid;
+    gid_t st_gid;
     unsigned long long st_rdev;
     unsigned char __pad3[4];
-    unsigned long st_size;
+    long long st_size;
     unsigned long st_blksize;
-    unsigned long st_blocks;
-    unsigned long st_atime;
-    unsigned long st_atime_nsec;
-    unsigned long st_mtime;
-    unsigned long st_mtime_nsec;
-    unsigned long st_ctime;
-    unsigned long st_ctime_nsec;
-    unsigned long long __pad4;
+    unsigned long long st_blocks;
+    struct timespec st_atim;
+    struct timespec st_mtim;
+    struct timespec st_ctim;
+    unsigned long long st_ino;
 } stat64_bionic;
 
 typedef struct __attribute__((__packed__)) dirent64_bionic {

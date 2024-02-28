@@ -210,7 +210,7 @@ size_t file_size(const char * path) {
     sceLibcBridge_fseek(f, 0, SEEK_END);
     ret = sceLibcBridge_ftell(f);
     sceLibcBridge_fseek(f, 0, SEEK_SET);
-    sceLibcBridge_fclose(f)
+    sceLibcBridge_fclose(f);
 #else
     fseek(f, 0, SEEK_END);
     ret = ftell(f);
