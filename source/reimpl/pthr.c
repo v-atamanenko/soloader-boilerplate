@@ -339,6 +339,7 @@ int pthread_attr_setdetachstate_soloader(pthread_attr_t_bionic *attr, int state)
 {
     if (!attr) return -1;
     _attr_t_static_init(attr);
+    state = !state; // pthread-embedded has JOINABLE/DETACHED swapped compared to BIONIC...
     return pthread_attr_setdetachstate(attr->real_ptr, state);
 }
 
