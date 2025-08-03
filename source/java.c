@@ -1,4 +1,6 @@
+#include <falso_jni/FalsoJNI.h>
 #include <falso_jni/FalsoJNI_Impl.h>
+#include <falso_jni/FalsoJNI_Logger.h>
 
 /*
  * JNI Methods

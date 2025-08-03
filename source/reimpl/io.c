@@ -56,6 +56,8 @@ int open_soloader(const char * path, int oflag, ...) {
         return open_soloader("app0:/cpuinfo", oflag);
     } else if (strcmp(path, "/proc/meminfo") == 0) {
         return open_soloader("app0:/meminfo", oflag);
+    } else if (strcmp(path, "/dev/urandom") == 0) {
+        return open_soloader("app0:/urandom", oflag);
     }
 
     mode_t mode = 0666;

@@ -43,6 +43,9 @@
 #include <libc_bridge/libc_bridge.h>
 #endif
 
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
+
 #include "reimpl/errno.h"
 #include "reimpl/io.h"
 #include "reimpl/log.h"
@@ -215,6 +218,8 @@ so_default_dynlib default_dynlib[] = {
         { "__stack_chk_guard", (uintptr_t)&__stack_chk_guard },
         { "__swbuf", (uintptr_t)&__swbuf },
         { "__system_property_get", (uintptr_t)&__system_property_get_soloader },
+        { "__assert2", (uintptr_t)&ret0 }, // TODO: stub/impl
+        { "dl_unwind_find_exidx", (uintptr_t)&ret0 }, // TODO: stub/impl
 
 
         // ctype
@@ -249,7 +254,9 @@ so_default_dynlib default_dynlib[] = {
         { "AAsset_getRemainingLength", (uintptr_t)&AAsset_getRemainingLength },
         { "AAsset_read", (uintptr_t)&AAsset_read },
         { "AAsset_seek", (uintptr_t)&AAsset_seek },
+        { "AAsset_openFileDescriptor", (uintptr_t)&AAsset_openFileDescriptor },
         { "AAssetDir_close", (uintptr_t)&AAssetDir_close },
+        { "AAssetDir_getNextFileName", (uintptr_t)&AAssetDir_getNextFileName },
         { "AAssetManager_fromJava", (uintptr_t)&ret1 },
         { "AAssetManager_open", (uintptr_t)&AAssetManager_open },
         { "AAssetManager_openDir", (uintptr_t)&AAssetManager_openDir },
@@ -274,6 +281,11 @@ so_default_dynlib default_dynlib[] = {
         { "expf", (uintptr_t)&expf },
         { "floor", (uintptr_t)&floor },
         { "floorf", (uintptr_t)&floorf },
+        { "fmax", (uintptr_t)&fmax },
+        { "fmaxf", (uintptr_t)&fmaxf },
+        { "fmin", (uintptr_t)&fmin },
+        { "fminf", (uintptr_t)&fminf },
+        { "frexpf", (uintptr_t)&frexpf },
         { "fmod", (uintptr_t)&fmod },
         { "fmodf", (uintptr_t)&fmodf },
         { "frexp", (uintptr_t)&frexp },
@@ -316,6 +328,7 @@ so_default_dynlib default_dynlib[] = {
         { "bind", (uintptr_t)&bind },
         { "connect", (uintptr_t)&connect },
         { "freeaddrinfo", (uintptr_t)&freeaddrinfo },
+        { "gai_strerror", (uintptr_t)&ret0 },
         { "getaddrinfo", (uintptr_t)&getaddrinfo },
         { "gethostbyaddr", (uintptr_t)&gethostbyaddr },
         { "gethostbyname", (uintptr_t)&gethostbyname },
@@ -325,6 +338,7 @@ so_default_dynlib default_dynlib[] = {
         { "getsockname", (uintptr_t)&getsockname },
         { "getsockopt", (uintptr_t)&getsockopt },
         { "inet_aton", (uintptr_t)&inet_aton },
+        { "inet_pton", (uintptr_t)&inet_pton },
         { "inet_ntoa", (uintptr_t)&inet_ntoa },
         { "inet_ntop", (uintptr_t)&inet_ntop },
         { "listen", (uintptr_t)&listen },
@@ -352,6 +366,7 @@ so_default_dynlib default_dynlib[] = {
         { "memmove", (uintptr_t)&memmove },
         { "memset", (uintptr_t)&memset },
         { "mmap", (uintptr_t)&mmap },
+        { "__mmap2", (uintptr_t)&mmap },
         { "munmap", (uintptr_t)&munmap },
         { "realloc", (uintptr_t)&realloc },
         { "valloc", (uintptr_t)&valloc },
@@ -367,6 +382,7 @@ so_default_dynlib default_dynlib[] = {
         { "fstat", (uintptr_t)&fstat_soloader },
         { "fsync", (uintptr_t)&fsync_soloader },
         { "ioctl", (uintptr_t)&ioctl_soloader },
+        { "__open_2", (uintptr_t)&open_soloader },
         { "open", (uintptr_t)&open_soloader },
         { "opendir", (uintptr_t)&opendir_soloader },
         { "readdir", (uintptr_t)&readdir_soloader },
@@ -440,6 +456,7 @@ so_default_dynlib default_dynlib[] = {
         { "ftruncate", (uintptr_t)&ftruncate },
         { "getcwd", (uintptr_t)&getcwd },
         { "lseek", (uintptr_t)&lseek },
+        { "lseek64", (uintptr_t)&ret0 }, // TODO: implement or stub with warning
         { "lstat", (uintptr_t)&lstat },
         { "mkdir", (uintptr_t)&mkdir },
         { "pipe", (uintptr_t)&pipe },
@@ -637,6 +654,7 @@ so_default_dynlib default_dynlib[] = {
         { "glGetUniformLocation", (uintptr_t)&glGetUniformLocation },
         { "glHint", (uintptr_t)&glHint },
         { "glIsBuffer", (uintptr_t)&ret0 },
+        { "glIsRenderbuffer", (uintptr_t)&glIsRenderbuffer },
         { "glIsEnabled", (uintptr_t)&glIsEnabled },
         { "glIsFramebufferOES", (uintptr_t)&glIsFramebuffer },
         { "glIsRenderbufferOES", (uintptr_t)&glIsRenderbuffer },
@@ -731,12 +749,15 @@ so_default_dynlib default_dynlib[] = {
         { "glUniform1fv", (uintptr_t)&glUniform1fv },
         { "glUniform1i", (uintptr_t)&glUniform1i },
         { "glUniform1iv", (uintptr_t)&glUniform1iv },
+        { "glUniform2i", (uintptr_t)&glUniform2i },
         { "glUniform2f", (uintptr_t)&glUniform2f },
         { "glUniform2fv", (uintptr_t)&glUniform2fv },
         { "glUniform2iv", (uintptr_t)&glUniform2iv },
+        { "glUniform3i", (uintptr_t)&glUniform3i },
         { "glUniform3f", (uintptr_t)&glUniform3f },
         { "glUniform3fv", (uintptr_t)&glUniform3fv },
         { "glUniform3iv", (uintptr_t)&glUniform3iv },
+        { "glUniform4i", (uintptr_t)&glUniform4i },
         { "glUniform4f", (uintptr_t)&glUniform4f },
         { "glUniform4fv", (uintptr_t)&glUniform4fv },
         { "glUniform4iv", (uintptr_t)&glUniform4iv },
@@ -753,6 +774,17 @@ so_default_dynlib default_dynlib[] = {
         { "glVertexPointer", (uintptr_t)&glVertexPointer },
         { "glViewport", (uintptr_t)&glViewport },
         { "glWeightPointerOES", (uintptr_t)&ret0 },
+
+
+        // OpenSLES
+        { "SL_IID_ENGINE", (uintptr_t)&SL_IID_ENGINE },
+        { "SL_IID_ANDROIDSIMPLEBUFFERQUEUE", (uintptr_t)&SL_IID_ANDROIDSIMPLEBUFFERQUEUE },
+        { "SL_IID_METADATAEXTRACTION", (uintptr_t)&SL_IID_METADATAEXTRACTION },
+        { "SL_IID_PLAY", (uintptr_t)&SL_IID_PLAY },
+        { "SL_IID_PREFETCHSTATUS", (uintptr_t)&SL_IID_PREFETCHSTATUS },
+        { "SL_IID_SEEK", (uintptr_t)&SL_IID_SEEK },
+        { "SL_IID_VOLUME", (uintptr_t)&SL_IID_VOLUME },
+        { "slCreateEngine", (uintptr_t)&slCreateEngine },
 
 
         // Pthread
@@ -860,6 +892,7 @@ so_default_dynlib default_dynlib[] = {
         { "__errno", (uintptr_t)&__errno_soloader },
         { "strerror", (uintptr_t)&strerror_soloader },
         { "strerror_r", (uintptr_t)&strerror_r_soloader },
+        { "perror", (uintptr_t)&perror }, // TODO: errno translation
 
 
         // Strings
@@ -934,6 +967,7 @@ so_default_dynlib default_dynlib[] = {
         { "atoi", (uintptr_t)&atoi },
         { "atol", (uintptr_t)&atol },
         { "atoll", (uintptr_t)&atoll },
+        { "bsearch", (uintptr_t)&bsearch },
         { "exit", (uintptr_t)&exit_soloader },
         { "lrand48", (uintptr_t)&lrand48 },
         { "prctl", (uintptr_t)&ret0 },
