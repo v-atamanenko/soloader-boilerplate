@@ -78,6 +78,23 @@ AAssetDir* AAssetManager_openDir(AAssetManager* mgr, const char* dirName);
 AAsset* AAssetManager_open(AAssetManager* mgr, const char* filename, int mode);
 
 /**
+ * Iterate over the files in an asset directory.  A NULL string is returned
+ * when all the file names have been returned.
+ *
+ * The returned file name is suitable for passing to AAssetManager_open().
+ *
+ * The string returned here is owned by the AssetDir implementation and is not
+ * guaranteed to remain valid if any other calls are made on this AAssetDir
+ * instance.
+ */
+const char* AAssetDir_getNextFileName(AAssetDir* assetDir);
+
+/**
+ * Close an opened AAssetDir, freeing any related resources.
+ */
+void AAssetDir_close(AAssetDir* assetDir);
+
+/**
  * Close the asset, freeing all associated resources.
  */
 void AAsset_close(AAsset* asset);
@@ -108,10 +125,14 @@ off_t AAsset_getRemainingLength(AAsset* asset);
 off_t AAsset_getLength(AAsset* asset);
 
 /**
- * Close an opened AAssetDir, freeing any related resources.
+ * Open a new file descriptor that can be used to read the asset data. If the
+ * start or length cannot be represented by a 32-bit number, it will be
+ * truncated. If the file is large, use AAsset_openFileDescriptor64 instead.
+ *
+ * Returns < 0 if direct fd access is not possible (for example, if the asset is
+ * compressed).
  */
-void AAssetDir_close(AAssetDir* assetDir);
-
+int AAsset_openFileDescriptor(AAsset* asset, off_t* outStart, off_t* outLength);
 
 #ifdef __cplusplus
 };
