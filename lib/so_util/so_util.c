@@ -9,6 +9,8 @@
 #include <vitasdk.h>
 #include <kubridge.h>
 
+#include <psp2/kernel/clib.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +62,7 @@ static so_module *head = NULL, *tail = NULL;
 
 so_hook hook_thumb(uintptr_t addr, uintptr_t dst) {
     so_hook h;
-    printf("THUMB HOOK\n");
+    sceClibPrintf("THUMB HOOK\n");
     if (addr == 0)
         return h;
     h.thumb_addr = addr;
@@ -69,7 +71,7 @@ so_hook hook_thumb(uintptr_t addr, uintptr_t dst) {
         uint16_t nop = 0xbf00;
         kuKernelCpuUnrestrictedMemcpy((void *)addr, &nop, sizeof(nop));
         addr += 2;
-        printf("THUMB UNALIGNED\n");
+        sceClibPrintf("THUMB UNALIGNED\n");
     }
 
     h.addr = addr;
@@ -83,7 +85,7 @@ so_hook hook_thumb(uintptr_t addr, uintptr_t dst) {
 
 so_hook hook_arm(uintptr_t addr, uintptr_t dst) {
     so_hook h;
-    printf("ARM HOOK\n");
+    sceClibPrintf("ARM HOOK\n");
     if (addr == 0)
         return h;
     uint32_t hook[2];
@@ -171,7 +173,7 @@ int _so_load(so_module *mod, SceUID so_blockid, void *so_data, uintptr_t load_ad
                 mod->cave_base = mod->cave_head = (uintptr_t) prog_data + mod->phdr[i].p_memsz;
                 mod->cave_base = ALIGN_MEM(mod->cave_base, 0x4);
                 mod->cave_head = mod->cave_base;
-                //debugPrintf("code cave: %d bytes (@0x%08X).\n", mod->cave_size, mod->cave_base);
+                sceClibPrintf("code cave: %d bytes (@0x%08X).\n", mod->cave_size, mod->cave_base);
 
                 data_addr = (uintptr_t)prog_data + prog_size;
             } else {
@@ -444,7 +446,7 @@ int so_resolve(so_module *mod, so_default_dynlib *default_dynlib, int size_defau
                     if (!default_dynlib_only) {
                         uintptr_t link = so_resolve_link(mod, mod->dynstr + sym->st_name);
                         if (link) {
-                            // debugPrintf("Resolved from dependencies: %s\n", mod->dynstr + sym->st_name);
+                            sceClibPrintf("Resolved from dependencies: %s\n", mod->dynstr + sym->st_name);
                             if (type == R_ARM_ABS32) {
                                 val = *ptr + link;
                                 kuKernelCpuUnrestrictedMemcpy(ptr, &val, sizeof(uintptr_t));
@@ -467,11 +469,11 @@ int so_resolve(so_module *mod, so_default_dynlib *default_dynlib, int size_defau
 
                     if (!resolved) {
                         if (type == R_ARM_JUMP_SLOT) {
-                            printf("Unresolved import: %s\n", mod->dynstr + sym->st_name);
+                            sceClibPrintf("Unresolved import: %s\n", mod->dynstr + sym->st_name);
                             *ptr = (uintptr_t)&plt0_stub;
                         }
                         else {
-                            printf("Unresolved import: %s\n", mod->dynstr + sym->st_name);
+                            sceClibPrintf("Unresolved import: %s\n", mod->dynstr + sym->st_name);
                         }
                     }
                 }
@@ -659,7 +661,7 @@ void so_symbol_fix_ldmia(so_module *mod, const char *symbol) {
 
         //Is this an LDMIA instruction with a R0-R12 base register?
         if (((inst & 0xFFF00000) == 0xE8900000) && (((inst >> 16) & 0xF) < 13) ) {
-            //debugPrintf("Found possibly misaligned LDMIA on 0x%08X, trying to fix it... (instr: 0x%08X, to 0x%08X)\n", addr, *(uint32_t*)addr, mod->patch_head);
+            sceClibPrintf("Found possibly misaligned LDMIA on 0x%08X, trying to fix it... (instr: 0x%08X, to 0x%08X)\n", addr, *(uint32_t*)addr, mod->patch_head);
             trampoline_ldm(mod, (uint32_t *) addr);
         }
     }
