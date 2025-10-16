@@ -57,6 +57,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDEBUG_SOLOADER)
   # Uncomment this for verbose FalsoJNI logging:
   #add_definitions(-DFALSOJNI_DEBUGLEVEL=0)
+  # Uncomment this for OpenGL logging:
+  #add_definitions(-DDEBUG_OPENGL)
 endif()
 
 # makes sincos, sincosf, etc. visible
