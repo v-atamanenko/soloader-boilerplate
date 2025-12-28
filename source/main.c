@@ -6,6 +6,8 @@
 #include <falso_jni/FalsoJNI.h>
 #include <so_util/so_util.h>
 
+#include "reimpl/controls.h"
+
 int _newlib_heap_size_user = 256 * 1024 * 1024;
 
 #ifdef USE_SCELIBC_IO
@@ -30,4 +32,16 @@ int main() {
     }
 
     sceKernelExitDeleteThread(0);
+}
+
+void controls_handler_key(int32_t keycode, ControlsAction action) {
+    // Call into the .so here
+}
+
+void controls_handler_touch(int32_t id, float x, float y, ControlsAction action) {
+    // Call into the .so here
+}
+
+void controls_handler_analog(ControlsStickId which, float x, float y, ControlsAction action) {
+    // Call into the .so here
 }
