@@ -2,6 +2,7 @@
  * Copyright (C) 2021      Andy Nguyen
  * Copyright (C) 2021      Rinnegatamante
  * Copyright (C) 2022-2024 Volodymyr Atamanenko
+ * Copyright (C) 2026      Ellie J Turner
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
@@ -126,14 +127,7 @@ extern const short *BIONIC_toupper_tab_;
 
 static FILE __sF_fake[3];
 
-void *dlsym_soloader(void * handle, const char * symbol) {
-    // Usage example:
-    // if (strcmp("AMotionEvent_getAxisValue", symbol) == 0)
-    //    return &AMotionEvent_getAxisValue;
-
-    l_error("dlsym: Unknown symbol \"%s\".", symbol);
-    return NULL;
-}
+void *dlsym_soloader(void * handle, const char * symbol);
 
 so_default_dynlib default_dynlib[] = {
         // Common C/C++ internals
@@ -779,6 +773,7 @@ so_default_dynlib default_dynlib[] = {
         // OpenSLES
         { "SL_IID_ENGINE", (uintptr_t)&SL_IID_ENGINE },
         { "SL_IID_ANDROIDSIMPLEBUFFERQUEUE", (uintptr_t)&SL_IID_ANDROIDSIMPLEBUFFERQUEUE },
+        { "SL_IID_BUFFERQUEUE", (uintptr_t)&SL_IID_BUFFERQUEUE },
         { "SL_IID_METADATAEXTRACTION", (uintptr_t)&SL_IID_METADATAEXTRACTION },
         { "SL_IID_PLAY", (uintptr_t)&SL_IID_PLAY },
         { "SL_IID_PREFETCHSTATUS", (uintptr_t)&SL_IID_PREFETCHSTATUS },
@@ -857,6 +852,10 @@ so_default_dynlib default_dynlib[] = {
         { "iswxdigit", (uintptr_t)&iswxdigit },
         { "mbrlen", (uintptr_t)&mbrlen },
         { "mbrtowc", (uintptr_t)&mbrtowc },
+        { "mbsnrtowcs", (uintptr_t)&mbsnrtowcs },
+        { "mbsrtowcs", (uintptr_t)&mbsrtowcs },
+        { "mbstowcs", (uintptr_t)&mbstowcs },
+        { "mbtowc", (uintptr_t)&mbtowc },
         { "towlower", (uintptr_t)&towlower },
         { "towupper", (uintptr_t)&towupper },
         { "wcrtomb", (uintptr_t)&wcrtomb },
@@ -869,8 +868,18 @@ so_default_dynlib default_dynlib[] = {
         { "wcslcpy", (uintptr_t)&wcslcpy },
         { "wcslen", (uintptr_t)&wcslen },
         { "wcsncasecmp", (uintptr_t)&wcsncasecmp },
+        { "wcsncmp", (uintptr_t)&wcsncmp },
         { "wcsncpy", (uintptr_t)&wcsncpy },
+        { "wcsnlen", (uintptr_t)&wcsnlen },
+        { "wcsnrtombs", (uintptr_t)&wcsnrtombs },
+        { "wcsstr", (uintptr_t)&wcsstr },
+        { "wcstod", (uintptr_t)&wcstod },
+        { "wcstof", (uintptr_t)&wcstof },
+        { "wcstol", (uintptr_t)&wcstol },
+        { "wcstoll", (uintptr_t)&wcstoll },
         { "wcstombs", (uintptr_t)&wcstombs },
+        { "wcstoul", (uintptr_t)&wcstoul },
+        { "wcstoull", (uintptr_t)&wcstoull },
         { "wcsxfrm", (uintptr_t)&wcsxfrm },
         { "wctob", (uintptr_t)&wctob },
         { "wctype", (uintptr_t)&wctype },
@@ -1012,7 +1021,11 @@ so_default_dynlib default_dynlib[] = {
 
 
         // Locale
+        { "freelocale", (uintptr_t)&freelocale },
+        { "localeconv", (uintptr_t)&localeconv },
+        { "newlocale", (uintptr_t)&newlocale },
         { "setlocale", (uintptr_t)&setlocale },
+        { "uselocale", (uintptr_t)&uselocale },
 
 
         // zlib
@@ -1035,6 +1048,17 @@ so_default_dynlib default_dynlib[] = {
         { "inflateReset", (uintptr_t)&inflateReset },
         { "uncompress", (uintptr_t)&uncompress },
 };
+
+void *dlsym_soloader(void * handle, const char * symbol) {
+    for (int i = 0; i < sizeof(default_dynlib) / sizeof(default_dynlib[0]); i++) {
+        if (strcmp(symbol, default_dynlib[i].symbol) == 0) {
+            return &default_dynlib[i].func;
+        }
+    }
+
+    l_error("dlsym: Unknown symbol \"%s\".", symbol);
+    return NULL;
+}
 
 void resolve_imports(so_module* mod) {
     __sF_fake[0] = *stdin;

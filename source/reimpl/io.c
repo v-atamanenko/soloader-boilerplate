@@ -90,6 +90,11 @@ int fstat_soloader(int fd, stat64_bionic * buf) {
 }
 
 int stat_soloader(const char * path, stat64_bionic * buf) {
+    if (strcmp(path, "/system/lib/libOpenSLES.so") == 0) {
+        l_debug("stat(%s): returning 0 in case this is a check for OpenSLES support", path);
+        return 0;
+    }
+
     struct stat st;
     int res = stat(path, &st);
 
