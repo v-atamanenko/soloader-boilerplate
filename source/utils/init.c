@@ -15,6 +15,8 @@
 #include "utils/utils.h"
 #include "utils/settings.h"
 
+#include <reimpl/controls.h>
+
 #include <string.h>
 
 #include <psp2/appmgr.h>
@@ -95,4 +97,7 @@ void soloader_init_all() {
 
     jni_init();
     l_success("FalsoJNI initialized.");
+
+    controls_init();
+    l_success("Controls initialized.");
 }

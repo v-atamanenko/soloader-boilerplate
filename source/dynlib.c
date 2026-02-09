@@ -1046,6 +1046,7 @@ so_default_dynlib default_dynlib[] = {
         { "inflateInit2_", (uintptr_t)&inflateInit2_ },
         { "inflateInit_", (uintptr_t)&inflateInit_ },
         { "inflateReset", (uintptr_t)&inflateReset },
+        { "inflateReset2", (uintptr_t)&inflateReset2 },
         { "uncompress", (uintptr_t)&uncompress },
 };
 
