@@ -46,6 +46,10 @@ If you're new to Vita homebrew development in general, start with [Getting Start
 
 ## Getting Started
 
+### 0. Use the template (optional)
+
+Press the big green button "Use this template" to create your own repository, if you wish. In that case, replace the repo URL with yours in the steps below.
+
 ### 1. Clone with submodules
 
 ```sh
