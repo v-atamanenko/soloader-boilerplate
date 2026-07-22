@@ -81,6 +81,7 @@ There are also a few toggleable options:
 
 | Option | Default | Description |
 |---|---|---|
+| `NDK_PORT` | OFF | Turn this on if the game uses Android NDK (you can check this if the `.so` has `ANativeActivity_onCreate` in its symbols). |
 | `USE_SCELIBC_IO` | ON | Use SceLibcBridge for IO. Recommended for most ports. |
 | `SHADER_FORMAT` | GLSL | Shader format: `GLSL`, `CG`, or `GXP`. |
 | `DUMP_COMPILED_SHADERS` | ON | Cache compiled shaders on disk (GLSL/CG only). |

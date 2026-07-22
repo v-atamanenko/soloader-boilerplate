@@ -57,6 +57,10 @@
 #include "reimpl/time64.h"
 #include "reimpl/asset_manager.h"
 
+#ifdef NDK_PORT
+#include <falso_ndk/FalsoNDK.h>
+#endif
+
 const unsigned int __page_size = PAGE_SIZE;
 
 extern void * _ZNSt9exceptionD2Ev;
@@ -255,10 +259,45 @@ so_default_dynlib default_dynlib[] = {
         { "AAssetManager_open", (uintptr_t)&AAssetManager_open },
         { "AAssetManager_openDir", (uintptr_t)&AAssetManager_openDir },
 
+        
+#ifdef NDK_PORT
+        // FalsoNDK
+        {"AConfiguration_delete", (uintptr_t)&AConfiguration_delete},
+        {"AConfiguration_fromAssetManager", (uintptr_t)&AConfiguration_fromAssetManager},
+        {"AConfiguration_getCountry", (uintptr_t)&AConfiguration_getCountry},
+        {"AConfiguration_getLanguage", (uintptr_t)&AConfiguration_getLanguage},
+        {"AConfiguration_new", (uintptr_t)&AConfiguration_new},
+        {"AInputEvent_getDeviceId", (uintptr_t)&AInputEvent_getDeviceId},
+        {"AInputEvent_getSource", (uintptr_t)&AInputEvent_getSource},
+        {"AInputEvent_getType", (uintptr_t)&AInputEvent_getType},
+        {"AInputQueue_attachLooper", (uintptr_t)&AInputQueue_attachLooper},
+        {"AInputQueue_detachLooper", (uintptr_t)&AInputQueue_detachLooper},
+        {"AInputQueue_finishEvent", (uintptr_t)&AInputQueue_finishEvent},
+        {"AInputQueue_getEvent", (uintptr_t)&AInputQueue_getEvent},
+        {"AInputQueue_hasEvents", (uintptr_t)&AInputQueue_hasEvents},
+        {"AInputQueue_preDispatchEvent", (uintptr_t)&AInputQueue_preDispatchEvent},
+        {"AKeyEvent_getAction", (uintptr_t)&AKeyEvent_getAction},
+        {"AKeyEvent_getKeyCode", (uintptr_t)&AKeyEvent_getKeyCode},
+        {"ALooper_addFd", (uintptr_t)&ALooper_addFd},
+        {"ALooper_pollAll", (uintptr_t)&ALooper_pollAll},
+        {"ALooper_prepare", (uintptr_t)&ALooper_prepare},
+        {"AMotionEvent_getAction", (uintptr_t)&AMotionEvent_getAction},
+        {"AMotionEvent_getAxisValue", (uintptr_t)&AMotionEvent_getAxisValue},
+        {"AMotionEvent_getPointerCount", (uintptr_t)&AMotionEvent_getPointerCount},
+        {"AMotionEvent_getX", (uintptr_t)&AMotionEvent_getX},
+        {"AMotionEvent_getY", (uintptr_t)&AMotionEvent_getY},
+        {"ANativeActivity_finish", (uintptr_t)&ANativeActivity_finish},
+        {"ANativeActivity_setWindowFlags", (uintptr_t)&ANativeActivity_setWindowFlags},
+        {"ANativeWindow_getHeight", (uintptr_t)&ANativeWindow_getHeight},
+        {"ANativeWindow_getWidth", (uintptr_t)&ANativeWindow_getWidth},
+        {"ANativeWindow_setBuffersGeometry", (uintptr_t)&ANativeWindow_setBuffersGeometry},
+#endif
+
 
         // Math
         { "acos", (uintptr_t)&acos },
         { "acosf", (uintptr_t)&acosf },
+        { "arc4random", (uintptr_t)&arc4random },
         { "asin", (uintptr_t)&asin },
         { "asinf", (uintptr_t)&asinf },
         { "atan", (uintptr_t)&atan },
@@ -269,6 +308,7 @@ so_default_dynlib default_dynlib[] = {
         { "ceilf", (uintptr_t)&ceilf },
         { "cos", (uintptr_t)&cos },
         { "cosf", (uintptr_t)&cosf },
+        { "cosh", (uintptr_t)&cosh },
         { "exp", (uintptr_t)&exp },
         { "exp2", (uintptr_t)&exp2 },
         { "exp2f", (uintptr_t)&exp2f },
@@ -367,7 +407,11 @@ so_default_dynlib default_dynlib[] = {
 
 
         // IO
+#ifndef NDK_PORT
         { "close", (uintptr_t)&close_soloader },
+#else   
+        { "close", (uintptr_t)&fndk_close },
+#endif
         { "closedir", (uintptr_t)&closedir_soloader },
         { "execv", (uintptr_t)&ret0 },
         { "fclose", (uintptr_t)&fclose_soloader },
@@ -453,8 +497,13 @@ so_default_dynlib default_dynlib[] = {
         { "lseek64", (uintptr_t)&ret0 }, // TODO: implement or stub with warning
         { "lstat", (uintptr_t)&lstat },
         { "mkdir", (uintptr_t)&mkdir },
+#ifndef NDK_PORT
         { "pipe", (uintptr_t)&pipe },
         { "read", (uintptr_t)&read },
+#else
+        { "pipe", (uintptr_t)&fndk_pipe },
+        { "read", (uintptr_t)&fndk_read },
+#endif
         { "realpath", (uintptr_t)&realpath },
         { "remove", (uintptr_t)&remove },
         { "rename", (uintptr_t)&rename },
@@ -462,7 +511,11 @@ so_default_dynlib default_dynlib[] = {
         { "rmdir", (uintptr_t)&rmdir },
         { "truncate", (uintptr_t)&truncate },
         { "unlink", (uintptr_t)&unlink },
+#ifndef NDK_PORT
         { "write", (uintptr_t)&write },
+#else
+        { "write", (uintptr_t)&fndk_write },
+#endif
 
 
         // *printf, *scanf
@@ -775,6 +828,7 @@ so_default_dynlib default_dynlib[] = {
         { "SL_IID_ANDROIDSIMPLEBUFFERQUEUE", (uintptr_t)&SL_IID_ANDROIDSIMPLEBUFFERQUEUE },
         { "SL_IID_BUFFERQUEUE", (uintptr_t)&SL_IID_BUFFERQUEUE },
         { "SL_IID_METADATAEXTRACTION", (uintptr_t)&SL_IID_METADATAEXTRACTION },
+        { "SL_IID_PITCH", (uintptr_t)&SL_IID_PITCH },
         { "SL_IID_PLAY", (uintptr_t)&SL_IID_PLAY },
         { "SL_IID_PREFETCHSTATUS", (uintptr_t)&SL_IID_PREFETCHSTATUS },
         { "SL_IID_SEEK", (uintptr_t)&SL_IID_SEEK },
