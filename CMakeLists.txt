@@ -22,8 +22,8 @@ set(PSVITAIP "192.168.0.198" CACHE STRING "PSVita IP (for FTP access)")
 set(PARSECOREPATH "$ENV{PARSECOREPATH}" CACHE STRING "vita-parse-core main.py")
 
 # Game-specific definitions
-set(DATA_PATH "ux0:data/gamename/" CACHE STRING "Path to data (with trailing /)")
-set(SO_PATH "${DATA_PATH}main.so" CACHE STRING "Path to .so")
+set(DATA_PATH "ux0:data/gamename/") # Path to data (with trailing /)
+set(SO_PATH "${DATA_PATH}main.so") # Path to .so
 add_definitions(-DDATA_PATH="${DATA_PATH}" -DSO_PATH="${SO_PATH}")
 
 # Port type
@@ -37,7 +37,7 @@ if (USE_SCELIBC_IO)
   add_definitions(-DUSE_SCELIBC_IO)
 endif()
 
-set(SHADER_FORMAT "GLSL" CACHE STRING "Preferred shader format (one of 'GLSL', 'CG', 'GXP')")
+set(SHADER_FORMAT "GLSL") # Preferred shader format (one of 'GLSL', 'CG', 'GXP')
 if (${SHADER_FORMAT} STREQUAL "GLSL")
   add_definitions(-DUSE_GLSL_SHADERS)
 elseif (${SHADER_FORMAT} STREQUAL "CG")
@@ -49,7 +49,7 @@ else()
 endif()
 
 set(valid_dump_formats GLSL CG)
-option(DUMP_COMPILED_SHADERS "When using GLSL or CG shader format, cache compiled shaders on disk" ON)
+option(DUMP_COMPILED_SHADERS "When using GLSL or CG shader format, cache compiled shaders on disk" OFF)
 if (DUMP_COMPILED_SHADERS)
   if (SHADER_FORMAT IN_LIST valid_dump_formats)
     add_definitions(-DDUMP_COMPILED_SHADERS)
@@ -72,6 +72,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   #add_definitions(-DDEBUG_EPOLL=1)
   #add_definitions(-DDEBUG_PIPEFD=1)
   #add_definitions(-DDEBUG_CALLBACKS=1)
+  # Space-separated flags passed to vitaGL
+  set(VITAGL_MAKE_FLAGS "SOFTFP_ABI=1 TEST=1 LOG_ERRORS=1")
+else()
+  # Space-separated flags passed to vitaGL
+  set(VITAGL_MAKE_FLAGS "SOFTFP_ABI=1 NO_DEBUG=1")
 endif()
 
 # makes sincos, sincosf, etc. visible
@@ -128,9 +133,47 @@ add_subdirectory(lib/libc_bridge)
 add_dependencies(${CMAKE_PROJECT_NAME} SceLibcBridge)
 
 if(NDK_PORT)
-add_subdirectory(lib/falso_ndk)
-add_dependencies(${CMAKE_PROJECT_NAME} FalsoNDK)
+  add_subdirectory(lib/falso_ndk)
+  add_dependencies(${CMAKE_PROJECT_NAME} FalsoNDK)
 endif()
+
+# VitaGL built from lib/vitagl via its own Makefile.
+# Made this way so that testing quick adjustments to VitaGL is possible,
+# as well as changing build flags in a fast and efficient way.
+separate_arguments(VITAGL_MAKE_ARGS UNIX_COMMAND "${VITAGL_MAKE_FLAGS}")
+
+set(VITAGL_DIR ${CMAKE_SOURCE_DIR}/lib/vitagl)
+set(VITAGL_LIB ${VITAGL_DIR}/libvitaGL.a)
+
+# Force a full rebuild of vitaGL whenever VITAGL_MAKE_FLAGS change
+set(VITAGL_FLAGS_STAMP ${CMAKE_BINARY_DIR}/vitagl_flags.stamp)
+set(vitagl_old_flags "")
+if (EXISTS ${VITAGL_FLAGS_STAMP})
+  file(READ ${VITAGL_FLAGS_STAMP} vitagl_old_flags)
+endif()
+if (NOT vitagl_old_flags STREQUAL VITAGL_MAKE_FLAGS)
+  file(GLOB_RECURSE vitagl_stale_objs ${VITAGL_DIR}/source/*.o)
+  file(REMOVE ${vitagl_stale_objs} ${VITAGL_LIB})
+  file(WRITE ${VITAGL_FLAGS_STAMP} "${VITAGL_MAKE_FLAGS}")
+endif()
+
+include(ProcessorCount)
+ProcessorCount(VITAGL_NPROC)
+if (VITAGL_NPROC EQUAL 0)
+  set(VITAGL_NPROC 4)
+endif()
+
+add_custom_target(vitaGL_build
+                  COMMAND make -C ${VITAGL_DIR} -j${VITAGL_NPROC} ${VITAGL_MAKE_ARGS}
+                  BYPRODUCTS ${VITAGL_LIB}
+                  COMMENT "Building VitaGL"
+                  VERBATIM)
+
+add_library(vitaGL STATIC IMPORTED)
+set_target_properties(vitaGL PROPERTIES
+                      IMPORTED_LOCATION ${VITAGL_LIB}
+                      INTERFACE_INCLUDE_DIRECTORIES ${VITAGL_DIR}/source)
+add_dependencies(${CMAKE_PROJECT_NAME} vitaGL_build)
 
 target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM
                            PUBLIC ${CMAKE_SOURCE_DIR}/lib
@@ -141,9 +184,9 @@ target_include_directories(${CMAKE_PROJECT_NAME}
                            )
 
 if(NDK_PORT)
-target_link_libraries(${CMAKE_PROJECT_NAME}
-                      FalsoNDK
-                      )
+  target_link_libraries(${CMAKE_PROJECT_NAME}
+                        FalsoNDK
+                        )
 endif()
 
 target_link_libraries(${CMAKE_PROJECT_NAME}

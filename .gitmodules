@@ -10,3 +10,6 @@
 	path = lib/falso_ndk
 	url = https://github.com/elliencode/FalsoNDK
 	branch = master
+[submodule "lib/vitagl"]
+	path = lib/vitagl
+	url = https://github.com/Rinnegatamante/vitaGL
